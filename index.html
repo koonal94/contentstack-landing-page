@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ContentStack - Modern Headless CMS Platform</title>
+    <meta name="description" content="Build modern digital experiences faster with ContentStack's headless CMS platform" />
+    <script>
+      // Suppress Contentstack editor UI accessibility warnings
+      // These warnings come from Contentstack's own editor interface (/#!/stack/.../edit)
+      // Not from our application code - this is a Contentstack UI bug
+      (function() {
+        if (typeof window !== 'undefined' && window.console) {
+          const originalError = console.error;
+          const originalWarn = console.warn;
+          
+          // Suppress aria-hidden warnings from Contentstack editor
+          console.error = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('Blocked aria-hidden') && 
+                message.includes('Element with focus') &&
+                (message.includes('Ancestor with aria-hidden') || message.includes('Form__item'))) {
+              return; // Suppress Contentstack editor UI accessibility warning
+            }
+            originalError.apply(console, args);
+          };
+          
+          console.warn = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('Blocked aria-hidden') && 
+                message.includes('Element with focus') &&
+                (message.includes('Ancestor with aria-hidden') || message.includes('Form__item'))) {
+              return; // Suppress Contentstack editor UI accessibility warning
+            }
+            originalWarn.apply(console, args);
+          };
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
