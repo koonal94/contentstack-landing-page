@@ -113,21 +113,27 @@ export async function fetchHomepage(forcedEntryUid = null) {
         .language(locale)
         .toJSON()
       
-      // CRITICAL: In Live Preview, add aggressive cache-busting to get latest draft
-      // When typing in fields, we need the absolute latest draft data IMMEDIATELY
-      if (inIframe) {
-        try {
-          if (typeof entryQuery.addParam === 'function') {
-            // Use timestamp for cache-busting to ensure fresh draft data
-            const timestamp = Date.now()
-            entryQuery.addParam('_cb', timestamp)
-            entryQuery.addParam('_t', timestamp)
-            entryQuery.addParam('_timestamp', timestamp)
-            entryQuery.addParam('_nocache', timestamp) // Force no cache
+      // CRITICAL: Add cache-busting to get latest published content
+      // For Live Preview (iframe): Aggressive cache-busting for draft changes
+      // For Production: Cache-busting to see published updates immediately
+      // Contentstack CDN may cache responses, so we add timestamp to force fresh data
+      try {
+        if (typeof entryQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          entryQuery.addParam('_cb', timestamp)
+          entryQuery.addParam('_t', timestamp)
+          entryQuery.addParam('_timestamp', timestamp)
+          
+          // In Live Preview, add additional no-cache params for drafts
+          if (inIframe) {
+            entryQuery.addParam('_nocache', timestamp)
             console.debug('[HOME] Added cache-busting params for Live Preview:', timestamp)
+          } else {
+            // For production, use shorter cache-busting to see published updates
+            console.debug('[HOME] Added cache-busting params for production:', timestamp)
           }
-        } catch {}
-      }
+        }
+      } catch {}
       
       // Debug: Log fetch attempt
       if (inIframe) {
@@ -155,15 +161,39 @@ export async function fetchHomepage(forcedEntryUid = null) {
           })
         }
       } catch (fetchError) {
+        // Handle 422 errors (entry doesn't exist) - clear invalid entry UID from storage
+        // Check multiple possible error formats from Contentstack SDK
+        const is422Error = fetchError?.status === 422 || 
+                          fetchError?.error_code === 141 ||
+                          (typeof fetchError === 'object' && fetchError !== null && 'status' in fetchError && fetchError.status === 422) ||
+                          (fetchError?.error_message && fetchError.error_message.includes("doesn't exist")) ||
+                          (typeof fetchError === 'object' && fetchError !== null && 'error_message' in fetchError && fetchError.error_message && fetchError.error_message.includes("doesn't exist"))
+        
+        if (is422Error) {
+          // Entry doesn't exist - clear invalid UID from storage immediately
+          if (typeof window !== 'undefined' && entryUid) {
+            try {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_last_version')
+              sessionStorage.removeItem('contentstack_last_updated')
+              sessionStorage.removeItem('contentstack_content_type')
+              // Also clear from localStorage
+              localStorage.removeItem('contentstack_entry_uid')
+              localStorage.removeItem('contentstack_last_version')
+              localStorage.removeItem('contentstack_last_updated')
+              localStorage.removeItem('contentstack_content_type')
+            } catch {}
+          }
+          // Return null immediately to prevent further attempts
+          return null
+        }
         // Handle network errors gracefully
-        if (fetchError?.message?.includes('ERR_NAME_NOT_RESOLVED') || fetchError?.message?.includes('Failed to fetch')) {
+        else if (fetchError?.message?.includes('ERR_NAME_NOT_RESOLVED') || fetchError?.message?.includes('Failed to fetch')) {
           console.error('❌ Contentstack: Network error - cannot resolve host. Check:')
           console.error('   1. Internet connection is active')
           console.error('   2. DNS is working (try: ping cdn.contentstack.io)')
           console.error('   3. Firewall/VPN is not blocking contentstack.io domains')
           console.error('   4. Region configuration is correct:', region)
-        } else {
-          console.error('❌ Contentstack: Fetch error:', fetchError)
         }
         // Don't set entry - will fall through to next query attempt
       }
@@ -228,7 +258,21 @@ export async function fetchHomepage(forcedEntryUid = null) {
           try {
             entry = await entryQuery.fetch()
           } catch (fetchError) {
-            if (fetchError?.message?.includes('ERR_NAME_NOT_RESOLVED') || fetchError?.message?.includes('Failed to fetch')) {
+            // Handle 422 errors (entry doesn't exist) - clear invalid entry UID
+            if (fetchError?.status === 422 || fetchError?.error_code === 141 || 
+                (fetchError?.error_message && fetchError.error_message.includes("doesn't exist"))) {
+              if (typeof window !== 'undefined' && entryUid) {
+                try {
+                  const storedContentType = sessionStorage.getItem('contentstack_content_type')
+                  if (storedContentType === contentType) {
+                    sessionStorage.removeItem('contentstack_entry_uid')
+                    sessionStorage.removeItem('contentstack_last_version')
+                    sessionStorage.removeItem('contentstack_last_updated')
+                  }
+                } catch {}
+              }
+            }
+            else if (fetchError?.message?.includes('ERR_NAME_NOT_RESOLVED') || fetchError?.message?.includes('Failed to fetch')) {
               console.error('❌ Contentstack: Network error fetching entry by UID:', entryUid)
             }
             // Silent fallback to query below
@@ -518,6 +562,13 @@ export function mapHomepage(entry) {
       subtitle: fields?.cta?.subtitle,
       primaryText: fields?.cta?.primary_text,
       secondaryText: fields?.cta?.secondary_text,
+    },
+    pricing: {
+      eyebrow: fields?.pricing?.eyebrow,
+      heading: fields?.pricing?.heading,
+      subheading: fields?.pricing?.subheading,
+      plans: fields?.pricing?.plans || [],
+      note: fields?.pricing?.note,
     },
     // footer may be a group with .link_groups or a direct array of groups
     footer: {

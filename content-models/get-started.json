@@ -1,0 +1,227 @@
+{
+  "title": "Get Started Page",
+  "uid": "get_started",
+  "schema": [
+    {
+      "display_name": "Entry Title",
+      "uid": "entry_title",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": true,
+      "field_metadata": {},
+      "unique": false
+    },
+    {
+      "display_name": "Hero Section",
+      "uid": "hero",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Eyebrow Text",
+          "uid": "eyebrow",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subheading",
+          "uid": "subheading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Steps",
+      "uid": "steps",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Number",
+          "uid": "number",
+          "data_type": "number",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Icon",
+          "uid": "icon",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Form",
+      "uid": "form",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subtitle",
+          "uid": "subtitle",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Name Label",
+          "uid": "name_label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Email Label",
+          "uid": "email_label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Company Label",
+          "uid": "company_label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Submit Text",
+          "uid": "submit_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Terms Text",
+          "uid": "terms_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Benefits",
+      "uid": "benefits",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Icon",
+          "uid": "icon",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Footer",
+      "uid": "footer",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Link Groups",
+          "uid": "link_groups",
+          "data_type": "group",
+          "multiple": true,
+          "mandatory": false,
+          "field_metadata": {},
+          "schema": [
+            {
+              "display_name": "Title",
+              "uid": "title",
+              "data_type": "text",
+              "multiple": false,
+              "mandatory": false,
+              "field_metadata": {}
+            },
+            {
+              "display_name": "Links",
+              "uid": "links",
+              "data_type": "link",
+              "multiple": true,
+              "mandatory": false,
+              "field_metadata": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -234,6 +234,20 @@ If you enabled auto-deploy:
 - [ ] Live Preview URLs configured in Contentstack
 - [ ] Custom domain configured (if needed)
 
+## What Happens After Deployment?
+
+Once your site is successfully deployed:
+
+1. **Content Updates** (from Contentstack) → **Automatic!** No redeployment needed
+   - When you publish entries in Contentstack, the website automatically shows new content
+   - The app fetches content from Contentstack API on every page load
+   - Changes appear within minutes (may need to clear CDN cache)
+
+2. **Code Updates** (React/components) → **Requires Redeployment**
+   - Push code to GitHub → Launch auto-deploys (if enabled) or manually redeploy
+
+**See [`POST_DEPLOYMENT_WORKFLOW.md`](./POST_DEPLOYMENT_WORKFLOW.md) for complete guide on managing updates after deployment.**
+
 ## Additional Resources
 
 - [Contentstack Launch Documentation](https://www.contentstack.com/docs/developers/launch)

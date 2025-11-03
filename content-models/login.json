@@ -1,0 +1,201 @@
+{
+  "title": "Login Page",
+  "uid": "login",
+  "schema": [
+    {
+      "display_name": "Entry Title",
+      "uid": "entry_title",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": true,
+      "field_metadata": {},
+      "unique": false
+    },
+    {
+      "display_name": "Hero Section",
+      "uid": "hero",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Eyebrow Text",
+          "uid": "eyebrow",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subheading",
+          "uid": "subheading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Form",
+      "uid": "form",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subtitle",
+          "uid": "subtitle",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Email Label",
+          "uid": "email_label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Password Label",
+          "uid": "password_label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Remember Me Text",
+          "uid": "remember_me_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Forgot Password Text",
+          "uid": "forgot_password_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Submit Text",
+          "uid": "submit_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Or Text",
+          "uid": "or_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Social Login Text",
+          "uid": "social_login_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Features",
+      "uid": "features",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Icon",
+          "uid": "icon",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Footer",
+      "uid": "footer",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Link Groups",
+          "uid": "link_groups",
+          "data_type": "group",
+          "multiple": true,
+          "mandatory": false,
+          "field_metadata": {},
+          "schema": [
+            {
+              "display_name": "Title",
+              "uid": "title",
+              "data_type": "text",
+              "multiple": false,
+              "mandatory": false,
+              "field_metadata": {}
+            },
+            {
+              "display_name": "Links",
+              "uid": "links",
+              "data_type": "link",
+              "multiple": true,
+              "mandatory": false,
+              "field_metadata": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -120,7 +120,9 @@ Create these content types in your Contentstack stack (suggested minimal setup):
   - label: Text
   - href: Text
 
-Environment variables (create a `.env` file or copy from `.env.example`):
+**⚠️ IMPORTANT: Create a `.env` file in the project root before running `npm run dev`**
+
+Environment variables (create a `.env` file):
 
 ```
 VITE_CONTENTSTACK_API_KEY=your_api_key
@@ -209,6 +211,8 @@ VITE_CONTENTSTACK_USE_PREVIEW=false
 ```
 
 **See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for complete step-by-step instructions.**
+
+**After deployment, see [`POST_DEPLOYMENT_WORKFLOW.md`](./POST_DEPLOYMENT_WORKFLOW.md) for how to manage content and code updates.**
 
 ## Project Structure
 

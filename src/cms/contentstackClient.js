@@ -19,9 +19,6 @@ function parseBool(v) {
 const requestedPreview = parseBool(import.meta.env.VITE_CONTENTSTACK_USE_PREVIEW)
 const livePreviewEnabled = parseBool(import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW)
 
-// Store last stack config so other modules (livePreview.js) can inspect it
-// The Stack instance may not expose live_preview.preview_token, so we persist the config
-let _lastStackConfig = null
 
 // Check if we're currently in a Live Preview session
 function isInLivePreviewSession() {
@@ -102,22 +99,12 @@ export function getStack() {
   }
 
   // Add Live Preview config when Live Preview is enabled
-  // CRITICAL: This config is required for Live Preview Utils SDK socket authentication
-  // The Utils SDK reads preview_token from stack.live_preview.preview_token
-  // IMPORTANT: The preview_token MUST be a string and must match the token in Contentstack
   if (livePreviewEnabled && previewToken) {
     stackConfig.live_preview = {
       enable: true,
-      host: hostMap[region]?.restPreview || hostMap.US.restPreview,
-      preview_token: String(previewToken).trim(), // CRITICAL: Utils SDK reads this for socket-auth
+      host: hostMap[normalizedRegion]?.restPreview || hostMap.US.restPreview,
+      preview_token: String(previewToken).trim(),
     }
-    
-    // Verify token format (Contentstack preview tokens typically start with 'cs')
-    if (!previewToken.startsWith('cs')) {
-      console.warn('⚠️ Preview token format unusual - should start with "cs"')
-    }
-  } else if (livePreviewEnabled && !previewToken) {
-    console.warn('⚠️ Live Preview enabled but preview token missing - Live Edit will not work')
   }
   
   console.debug('CMS: init stack', {
@@ -137,10 +124,6 @@ export function getStack() {
     console.error('❌ Contentstack: Invalid host detected:', selectedHost)
     console.error('   Region:', normalizedRegion, '(from env:', region, ')')
   }
-
-  // Persist stack config for other modules (livePreview.js) to inspect
-  // The Stack instance may not expose live_preview.preview_token, so we store the config
-  _lastStackConfig = { ...stackConfig } // Deep clone not needed - we just need reference
 
   // Validate host before creating stack
   if (!selectedHost || !selectedHost.includes('contentstack')) {
@@ -162,18 +145,21 @@ export function getStack() {
     return null
   }
 
-  // CRITICAL: Disable ALL caching for Live Preview to see latest draft changes instantly
-  // This is essential for Live Preview to show changes as you type
+  // CRITICAL: Disable ALL caching to see latest published/draft changes immediately
+  // This is essential for:
+  // - Live Preview: To show draft changes as you type
+  // - Production: To see published updates immediately (Contentstack CDN may cache responses)
   try {
     if (stack.setCachePolicy) {
       stack.setCachePolicy(Contentstack.CachePolicy.IGNORE_CACHE)
     }
   } catch {}
   
-  // When Live Preview is enabled, ensure we bypass ALL caching
+  // When Live Preview is enabled, ensure we bypass ALL caching for drafts
+  // For production, this also ensures published updates appear immediately
   if (livePreviewEnabled && previewToken) {
     try {
-      // Force NO caching for Live Preview - must see latest draft immediately
+      // Force NO caching - must see latest content immediately
       if (stack.setCachePolicy) {
         stack.setCachePolicy(Contentstack.CachePolicy.IGNORE_CACHE)
       }
@@ -183,13 +169,5 @@ export function getStack() {
   return stack
 }
 
-/**
- * Get the last stack config used to build the Stack instance
- * This is needed because the Stack instance may not expose live_preview.preview_token
- * even though it was set in the config
- */
-export function getLastStackConfig() {
-  return _lastStackConfig
-}
 
 

@@ -16,12 +16,29 @@
           const originalWarn = console.warn;
           
           // Suppress aria-hidden warnings from Contentstack editor
+          // Also suppress 422 errors (entry doesn't exist) - these are handled and cleared automatically
           console.error = function(...args) {
             const message = args.join(' ');
+            // Suppress Contentstack editor UI accessibility warnings
             if (message.includes('Blocked aria-hidden') && 
                 message.includes('Element with focus') &&
                 (message.includes('Ancestor with aria-hidden') || message.includes('Form__item'))) {
-              return; // Suppress Contentstack editor UI accessibility warning
+              return;
+            }
+            // Suppress 422 errors - entry doesn't exist (handled automatically)
+            if (message.includes('Contentstack: Fetch error') || 
+                (args[0] && typeof args[0] === 'object' && 
+                 (args[0].status === 422 || args[0].error_code === 141 || 
+                  (args[0].error_message && args[0].error_message.includes("doesn't exist"))))) {
+              return; // Suppress 422 errors - handled automatically
+            }
+            // Check if error object contains 422 status
+            if (args.length > 0 && typeof args[args.length - 1] === 'object' && args[args.length - 1] !== null) {
+              const lastArg = args[args.length - 1];
+              if (lastArg.status === 422 || lastArg.error_code === 141 || 
+                  (lastArg.error_message && lastArg.error_message.includes("doesn't exist"))) {
+                return; // Suppress 422 errors
+              }
             }
             originalError.apply(console, args);
           };
