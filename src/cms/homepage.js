@@ -6,7 +6,19 @@ import Contentstack from 'contentstack'
 export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = false) {
   // Always get a fresh stack instance to ensure Live Preview detection is current
   const stack = getStack()
-  if (!stack) return null
+  if (!stack) {
+    console.error('[HOME] Stack is null - check environment variables:', {
+      hasApiKey: !!import.meta.env.VITE_CONTENTSTACK_API_KEY,
+      hasDeliveryToken: !!import.meta.env.VITE_CONTENTSTACK_DELIVERY_TOKEN,
+      environment: import.meta.env.VITE_CONTENTSTACK_ENVIRONMENT
+    })
+    return null
+  }
+  
+  const environment = import.meta.env.VITE_CONTENTSTACK_ENVIRONMENT || ''
+  if (!environment) {
+    console.error('[HOME] VITE_CONTENTSTACK_ENVIRONMENT is not set!')
+  }
   
   // Debug: Check if we're in Live Preview and if stack has live_preview config
   let inIframeCheck = false
@@ -32,6 +44,17 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
   
   const locale = import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
   let contentType = import.meta.env.VITE_CONTENTSTACK_CONTENT_TYPE_UID || 'homepage'
+  
+  // Log environment info for debugging (only in production, not Live Preview)
+  if (!inIframe && typeof window !== 'undefined') {
+    console.log('[HOME] Fetching homepage entry:', {
+      environment,
+      contentType,
+      locale,
+      forcedEntryUid: forcedEntryUid || 'none',
+      ignoreStoredUid
+    })
+  }
   
   // CRITICAL: When NOT in live preview, ignore environment variable UIDs to fetch published entries
   // Only use forcedEntryUid (for live preview callbacks) or UIDs from URL (for live preview)
@@ -353,10 +376,34 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
   }
 
   // Fallback: try default entry (works for published content)
+  // CRITICAL: When NOT in Live Preview, always query for published entries
   if (!entry && !inIframe) {
+    console.log('[HOME] Not in Live Preview - querying for published entries...', {
+      environment,
+      contentType,
+      locale,
+      hasStack: !!stack
+    })
+    
     try {
-      entry = await run(base.where('is_default', true).limit(1))
+      // Try querying for entry with is_default = true
+      const defaultQuery = base.where('is_default', true).limit(1)
+      // Add cache-busting for published entries
+      try {
+        if (typeof defaultQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          defaultQuery.addParam('_cb', timestamp)
+          defaultQuery.addParam('_t', timestamp)
+          defaultQuery.addParam('_fresh', timestamp)
+        }
+      } catch {}
+      
+      entry = await run(defaultQuery)
+      if (entry) {
+        console.log('[HOME] Found entry with is_default=true:', entry.uid)
+      }
     } catch (e) {
+      console.warn('[HOME] Query for default entry failed:', e)
       // Network error - continue to next fallback
     }
   }
@@ -371,10 +418,21 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
           const timestamp = Date.now()
           publishedQuery.addParam('_cb', timestamp)
           publishedQuery.addParam('_t', timestamp)
+          publishedQuery.addParam('_fresh', timestamp)
         }
       } catch {}
+      
       entry = await run(publishedQuery)
+      if (entry) {
+        console.log('[HOME] Found latest published entry:', entry.uid)
+      } else {
+        console.warn('[HOME] No published entries found. Check:')
+        console.warn('  1. Entry is published to environment:', environment)
+        console.warn('  2. Environment variable VITE_CONTENTSTACK_ENVIRONMENT matches published environment')
+        console.warn('  3. Content type UID is correct:', contentType)
+      }
     } catch (e) {
+      console.error('[HOME] Query for published entries failed:', e)
       // Network error - give up
     }
   }
