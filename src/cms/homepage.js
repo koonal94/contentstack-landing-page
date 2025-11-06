@@ -3,7 +3,7 @@ import Contentstack from 'contentstack'
 
 // Fetches the first published homepage entry marked as default
 // @param {string} forcedEntryUid - Optional entry UID to fetch (overrides detection)
-export async function fetchHomepage(forcedEntryUid = null) {
+export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = false) {
   // Always get a fresh stack instance to ensure Live Preview detection is current
   const stack = getStack()
   if (!stack) return null
@@ -24,46 +24,57 @@ export async function fetchHomepage(forcedEntryUid = null) {
     })
   }
 
-  const locale = import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
-  let contentType = import.meta.env.VITE_CONTENTSTACK_CONTENT_TYPE_UID || 'homepage'
-  let entryUid = forcedEntryUid || import.meta.env.VITE_CONTENTSTACK_ENTRY_UID || ''
-
-  // During live preview, Contentstack app adds query params or passes via postMessage
-  // Also check localStorage/sessionStorage as Contentstack SDK might store it there
-  try {
-    const params = new URLSearchParams(window.location.search)
-    const ctFromUrl = params.get('content_type_uid') || params.get('contentTypeUid')
-    const entryFromUrl = params.get('entry_uid') || params.get('entryUid')
-    if (ctFromUrl) contentType = ctFromUrl
-    if (entryFromUrl) {
-      entryUid = entryFromUrl
-      console.log('📌 Found entry UID in URL params:', entryUid)
-    }
-    
-    // Also check hash (Contentstack sometimes uses hash-based routing)
-    const hashMatch = window.location.hash.match(/entry[\/=]([^\/&\?]+)/i)
-    if (hashMatch && !entryUid) {
-      entryUid = hashMatch[1]
-      console.log('📌 Found entry UID in hash:', entryUid)
-    }
-    
-    // Check localStorage/sessionStorage for entry UID (Live Preview SDK might store it)
-    if (!entryUid && typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('contentstack_entry_uid') || 
-                      sessionStorage.getItem('contentstack_entry_uid')
-        if (stored) {
-          entryUid = stored
-        }
-      } catch {}
-    }
-  } catch {}
-  
-  // Check if in iframe (Live Preview indicator)
+  // Check if in iframe (Live Preview indicator) FIRST
   let inIframe = false
   try {
     inIframe = window.self !== window.top
   } catch {}
+  
+  const locale = import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
+  let contentType = import.meta.env.VITE_CONTENTSTACK_CONTENT_TYPE_UID || 'homepage'
+  
+  // CRITICAL: When NOT in live preview, ignore environment variable UIDs to fetch published entries
+  // Only use forcedEntryUid (for live preview callbacks) or UIDs from URL (for live preview)
+  let entryUid = forcedEntryUid || ''
+
+  // During live preview, Contentstack app adds query params or passes via postMessage
+  // Only use URL params if in live preview OR if forcedEntryUid was provided
+  // Skip URL params/hash if ignoreStoredUid is true (for fetching published entries)
+  if (!ignoreStoredUid) {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const ctFromUrl = params.get('content_type_uid') || params.get('contentTypeUid')
+      const entryFromUrl = params.get('entry_uid') || params.get('entryUid')
+      if (ctFromUrl) contentType = ctFromUrl
+      
+      // Only use URL params if in live preview OR if forcedEntryUid was provided
+      if (entryFromUrl && (inIframe || forcedEntryUid)) {
+        entryUid = entryFromUrl
+        console.log('📌 Found entry UID in URL params:', entryUid)
+      }
+      
+      // Also check hash (Contentstack sometimes uses hash-based routing)
+      const hashMatch = window.location.hash.match(/entry[\/=]([^\/&\?]+)/i)
+      if (hashMatch && !entryUid && (inIframe || forcedEntryUid)) {
+        entryUid = hashMatch[1]
+        console.log('📌 Found entry UID in hash:', entryUid)
+      }
+      
+    } catch {}
+  }
+  
+  // Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // When NOT in live preview, skip stored UIDs to fetch published entries
+  // Also skip if ignoreStoredUid is true (for fetching homepage data for logo)
+  if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('contentstack_entry_uid') || 
+                    sessionStorage.getItem('contentstack_entry_uid')
+      if (stored) {
+        entryUid = stored
+      }
+    } catch {}
+  }
 
   async function run(q) {
     const result = await q.find()
@@ -87,6 +98,8 @@ export async function fetchHomepage(forcedEntryUid = null) {
       'benefits.cards',
       'testimonials',
       'testimonials.items',
+      'pricing',
+      'pricing.plans',
       'footer',
       'footer.link_groups',
     ])
@@ -95,7 +108,8 @@ export async function fetchHomepage(forcedEntryUid = null) {
   let entry = null
 
   // If an explicit entry UID is provided, load that first (most specific)
-  if (entryUid) {
+  // BUT: If ignoreStoredUid is true, skip UID-based fetching and query published entries directly
+  if (entryUid && !ignoreStoredUid) {
     try {
       const entryQuery = stack
         .ContentType(contentType)
@@ -107,6 +121,8 @@ export async function fetchHomepage(forcedEntryUid = null) {
           'benefits.cards',
           'testimonials',
           'testimonials.items',
+          'pricing',
+          'pricing.plans',
           'footer',
           'footer.link_groups',
         ])
@@ -177,6 +193,8 @@ export async function fetchHomepage(forcedEntryUid = null) {
               sessionStorage.removeItem('contentstack_last_version')
               sessionStorage.removeItem('contentstack_last_updated')
               sessionStorage.removeItem('contentstack_content_type')
+              sessionStorage.removeItem('contentstack_homepage_last_version')
+              sessionStorage.removeItem('contentstack_homepage_last_updated')
               // Also clear from localStorage
               localStorage.removeItem('contentstack_entry_uid')
               localStorage.removeItem('contentstack_last_version')
@@ -184,8 +202,10 @@ export async function fetchHomepage(forcedEntryUid = null) {
               localStorage.removeItem('contentstack_content_type')
             } catch {}
           }
-          // Return null immediately to prevent further attempts
-          return null
+          // Clear entryUid so we fall through to query published entries
+          entryUid = ''
+          console.warn('[HOME] Entry UID invalid (422), falling back to query published entries')
+          // Don't return - let it fall through to query logic below
         }
         // Handle network errors gracefully
         else if (fetchError?.message?.includes('ERR_NAME_NOT_RESOLVED') || fetchError?.message?.includes('Failed to fetch')) {
@@ -201,7 +221,7 @@ export async function fetchHomepage(forcedEntryUid = null) {
       if (entry) {
         // CRITICAL: Normalize structure IMMEDIATELY - Preview API returns data at root level
         // Contentstack Preview API returns entry.hero instead of entry.fields.hero
-        if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits)) {
+        if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.features || entry.testimonials || entry.pricing || entry.footer)) {
           entry.fields = {}
           // Copy all content fields to entry.fields (preserve the actual data)
           Object.keys(entry).forEach(key => {
@@ -238,6 +258,8 @@ export async function fetchHomepage(forcedEntryUid = null) {
               'benefits.cards',
               'testimonials',
               'testimonials.items',
+              'pricing',
+              'pricing.plans',
               'footer',
               'footer.link_groups',
             ])
@@ -252,6 +274,9 @@ export async function fetchHomepage(forcedEntryUid = null) {
               entryQuery.addParam('_cb', timestamp)
               entryQuery.addParam('_t', timestamp)
               entryQuery.addParam('_timestamp', timestamp) // Additional cache-busting
+              entryQuery.addParam('_nocache', timestamp) // Force no cache
+              entryQuery.addParam('_live', 'true') // Live preview flag
+              entryQuery.addParam('_preview', 'true') // Preview flag
             }
           } catch {}
           
@@ -339,7 +364,16 @@ export async function fetchHomepage(forcedEntryUid = null) {
   // Final fallback: latest updated homepage entry (only if not in Live Preview)
   if (!entry && !inIframe) {
     try {
-      entry = await run(base.only(['*']).descending('updated_at').limit(1))
+      const publishedQuery = base.only(['*']).descending('updated_at').limit(1)
+      // Add cache-busting for published entries to ensure we get latest
+      try {
+        if (typeof publishedQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          publishedQuery.addParam('_cb', timestamp)
+          publishedQuery.addParam('_t', timestamp)
+        }
+      } catch {}
+      entry = await run(publishedQuery)
     } catch (e) {
       // Network error - give up
     }
@@ -363,7 +397,7 @@ export async function fetchHomepage(forcedEntryUid = null) {
     // CRITICAL: Normalize entry structure BEFORE adding edit tags
     // Preview API returns entry.hero, but we need entry.fields.hero for consistency
     // This must happen BEFORE addEditableTags so it can access entry.fields
-    if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.features || entry.testimonials || entry.footer)) {
+    if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.features || entry.testimonials || entry.pricing || entry.footer)) {
       entry.fields = {}
       Object.keys(entry).forEach(key => {
         if (!key.startsWith('_') && key !== 'uid' && key !== '$' && key !== 'fields' && 
@@ -419,7 +453,7 @@ export async function fetchHomepage(forcedEntryUid = null) {
           }
           
           // Check for fields at root level and normalize them to entry.fields
-          const groupNames = ['hero', 'navigation', 'cta', 'benefits', 'features', 'testimonials', 'footer']
+          const groupNames = ['hero', 'navigation', 'cta', 'benefits', 'features', 'testimonials', 'pricing', 'footer']
           groupNames.forEach(groupName => {
             // If group exists at root but not in entry.fields, copy it
             if (entry[groupName] && !entry.fields[groupName]) {
@@ -444,6 +478,7 @@ export async function fetchHomepage(forcedEntryUid = null) {
             benefits: ['title', 'subtitle', 'cards', 'stats'],
             features: ['items'],
             testimonials: ['items'],
+            pricing: ['eyebrow', 'heading', 'subheading', 'plans', 'note'],
             footer: ['link_groups'],
           }
           
@@ -492,7 +527,92 @@ export async function fetchHomepage(forcedEntryUid = null) {
     }
   }
 
+  // CRITICAL: If pricing.plans only have UIDs (no fields), fetch them separately
+  // This is a workaround for includeReference not working for nested references in groups
+  // Check both entry.fields.pricing.plans and entry.pricing.plans (Preview API vs Delivery API)
+  const pricingPlans = entry?.fields?.pricing?.plans || entry?.pricing?.plans
+  if (entry && pricingPlans && Array.isArray(pricingPlans)) {
+    if (pricingPlans.length > 0 && pricingPlans[0]) {
+      const firstPlan = pricingPlans[0]
+      const firstPlanKeys = Object.keys(firstPlan)
+      const hasOnlyMetadata = firstPlanKeys.every(key => ['uid', '_content_type_uid', '$'].includes(key))
+      
+      if (!firstPlan.fields && hasOnlyMetadata && firstPlan._content_type_uid) {
+        console.log('[fetchHomepage] Plans have only UIDs, fetching separately...')
+        // Fetch plans and populate fields
+        await populatePlanFields(entry, pricingPlans, firstPlan._content_type_uid)
+      }
+    }
+  }
+  
   return entry || null
+}
+
+// Helper function to fetch pricing plan entries and populate their fields
+async function populatePlanFields(entry, planRefs, contentTypeUid) {
+  if (!planRefs || planRefs.length === 0 || !contentTypeUid) {
+    return
+  }
+  
+  try {
+    const stack = getStack()
+    const locale = import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
+    const planUids = planRefs.map(p => p.uid).filter(Boolean)
+    
+    if (planUids.length === 0) {
+      return
+    }
+    
+    console.log('[fetchHomepage] Fetching plans separately:', { contentTypeUid, planUids })
+    
+    // Fetch all plan entries by UID
+    const planEntries = await Promise.all(
+      planUids.map(async (uid) => {
+        try {
+          const entryQuery = stack
+            .ContentType(contentTypeUid)
+            .Entry(uid)
+            .language(locale)
+            .toJSON()
+          
+          const planEntry = await entryQuery.fetch()
+          return planEntry
+        } catch (error) {
+          console.warn(`[fetchHomepage] Failed to fetch plan ${uid}:`, error)
+          return null
+        }
+      })
+    )
+    
+    // Populate the fields in the original entry structure
+    const validPlans = planEntries.filter(Boolean)
+    if (validPlans.length > 0) {
+      console.log('[fetchHomepage] Successfully fetched plans, populating fields:', validPlans.length)
+      
+      // Update entry.fields.pricing.plans with fetched data
+      if (entry.fields && entry.fields.pricing && entry.fields.pricing.plans) {
+        entry.fields.pricing.plans = validPlans.map((planEntry, index) => {
+          // Merge the fetched entry with the original ref (preserve UID structure)
+          return {
+            ...planRefs[index],
+            fields: planEntry.fields || planEntry
+          }
+        })
+      }
+      
+      // Also update at root level if it exists
+      if (entry.pricing && entry.pricing.plans) {
+        entry.pricing.plans = validPlans.map((planEntry, index) => {
+          return {
+            ...planRefs[index],
+            fields: planEntry.fields || planEntry
+          }
+        })
+      }
+    }
+  } catch (error) {
+    console.error('[fetchHomepage] Error fetching plans separately:', error)
+  }
 }
 
 // Maps raw CMS homepage entry to UI-friendly shape
@@ -504,7 +624,7 @@ export function mapHomepage(entry) {
   let fields = entry.fields
   
   // If entry.fields doesn't exist but data is at root level, use root directly
-  if (!fields && (entry.hero || entry.navigation || entry.cta || entry.benefits)) {
+  if (!fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.features || entry.testimonials || entry.pricing || entry.footer)) {
     fields = entry
   } else if (!fields) {
     return null
@@ -513,6 +633,15 @@ export function mapHomepage(entry) {
   // Ensure fields is an object
   if (!fields || typeof fields !== 'object') {
     return null
+  }
+  
+  // Handle pricing group - it might be an array (if repeatable) or an object
+  let pricingData = fields?.pricing
+  if (Array.isArray(pricingData) && pricingData.length > 0) {
+    // If pricing is an array, use the first element
+    pricingData = pricingData[0]
+  } else if (!pricingData || (typeof pricingData !== 'object')) {
+    pricingData = null
   }
 
   return {
@@ -532,43 +661,287 @@ export function mapHomepage(entry) {
       stats: fields?.hero?.stats || [],
     },
     // features may come as a group with .items or a top-level reference array
-    features: ((fields?.features?.items) || fields?.features || []).map((f) => ({
-      title: f?.title,
-      description: f?.description,
-      color: f?.color || 'from-blue-400 to-cyan-500',
-      icon: f?.icon || 'Zap',
-    })),
+    features: (() => {
+      // Handle different structures: reference field (.items), direct array
+      let featuresData = null
+      
+      // Check if it's a reference field structure
+      if (fields?.features?.items && Array.isArray(fields.features.items)) {
+        featuresData = fields.features.items
+      }
+      // Check if features is directly an array
+      else if (Array.isArray(fields?.features)) {
+        featuresData = fields.features
+      }
+      // If features doesn't exist or is empty, return empty array
+      else {
+        featuresData = []
+      }
+      
+      // Map features to consistent structure
+      return featuresData.map((f) => ({
+        title: f?.title || f?.name || '',
+        description: f?.description || f?.desc || '',
+        color: f?.color || 'from-blue-400 to-cyan-500',
+        icon: f?.icon || 'Zap',
+      }))
+    })(),
     // benefits may be a group with title/subtitle and .cards, or a direct array of cards
+    // Handle reference fields (.items) and direct arrays
     benefits: {
       title: fields?.benefits?.title,
       subtitle: fields?.benefits?.subtitle,
-      cards: ((fields?.benefits?.cards) || fields?.benefits || []).map((c) => ({
-        title: c?.title,
-        description: c?.description,
-        bullets: c?.bullets || [],
-      })),
+      cards: (() => {
+        // Handle different structures: reference field (.items), direct array, or nested .cards
+        let cardsData = null
+        
+        // Check if it's a reference field structure
+        if (fields?.benefits?.cards?.items && Array.isArray(fields.benefits.cards.items)) {
+          cardsData = fields.benefits.cards.items
+        }
+        // Check if cards is directly an array
+        else if (Array.isArray(fields?.benefits?.cards)) {
+          cardsData = fields.benefits.cards
+        }
+        // Check if benefits is directly an array (fallback)
+        else if (Array.isArray(fields?.benefits)) {
+          cardsData = fields.benefits
+        }
+        // If cards doesn't exist or is empty, return empty array
+        else {
+          cardsData = []
+        }
+        
+        // Map cards to consistent structure
+        return cardsData.map((c) => ({
+          title: c?.title || c?.name || '',
+          description: c?.description || c?.desc || '',
+          bullets: Array.isArray(c?.bullets) ? c.bullets : 
+                  Array.isArray(c?.features) ? c.features :
+                  Array.isArray(c?.items) ? c.items.map(item => typeof item === 'string' ? item : item?.text || item?.name || '') : [],
+        }))
+      })(),
       stats: fields?.benefits?.stats || fields?.stats || [],
     },
     // testimonials may be nested .items or be a direct reference array
-    testimonials: ((fields?.testimonials?.items) || fields?.testimonials || []).map((t) => ({
-      name: t?.name,
-      role: t?.role,
-      avatar: t?.avatar_emoji || '😀',
-      content: t?.content,
-      rating: t?.rating || 5,
-    })),
+    testimonials: (() => {
+      // Handle different structures: reference field (.items), direct array
+      let testimonialsData = null
+      
+      // Check if it's a reference field structure
+      if (fields?.testimonials?.items && Array.isArray(fields.testimonials.items)) {
+        testimonialsData = fields.testimonials.items
+      }
+      // Check if testimonials is directly an array
+      else if (Array.isArray(fields?.testimonials)) {
+        testimonialsData = fields.testimonials
+      }
+      // If testimonials doesn't exist or is empty, return empty array
+      else {
+        testimonialsData = []
+      }
+      
+      // Map testimonials to consistent structure
+      return testimonialsData.map((t) => ({
+        name: t?.name || '',
+        role: t?.role || '',
+        avatar: t?.avatar || t?.avatar_emoji || '😀',
+        content: t?.content || t?.text || '',
+        rating: t?.rating || 5,
+      }))
+    })(),
     cta: {
       title: fields?.cta?.title,
       subtitle: fields?.cta?.subtitle,
       primaryText: fields?.cta?.primary_text,
       secondaryText: fields?.cta?.secondary_text,
     },
+    // pricing plans - handle Group field structure (JSON/RTE/Modular Blocks) or Reference field
     pricing: {
-      eyebrow: fields?.pricing?.eyebrow,
-      heading: fields?.pricing?.heading,
-      subheading: fields?.pricing?.subheading,
-      plans: fields?.pricing?.plans || [],
-      note: fields?.pricing?.note,
+      eyebrow: (() => {
+        const value = pricingData?.eyebrow
+        if (value !== undefined && value !== null && value !== '') return value
+        return null
+      })(),
+      heading: (() => {
+        const value = pricingData?.heading
+        if (value !== undefined && value !== null && value !== '') return value
+        return null
+      })(),
+      subheading: (() => {
+        const value = pricingData?.subheading
+        if (value !== undefined && value !== null && value !== '') return value
+        return null
+      })(),
+      plans: (() => {
+        // Handle Reference field structure (same as benefits.cards, features.items, testimonials.items)
+        let plansData = null
+        
+        // Debug: Log the structure to understand what we're receiving
+        console.log('[mapHomepage] Pricing plans structure:', {
+          pricingData: pricingData ? Object.keys(pricingData) : null,
+          pricingDataPlans: pricingData?.plans ? (Array.isArray(pricingData.plans) ? `Array(${pricingData.plans.length})` : typeof pricingData.plans) : null,
+          fieldsPricingPlans: fields?.pricing?.plans ? (Array.isArray(fields.pricing.plans) ? `Array(${fields.pricing.plans.length})` : typeof fields.pricing.plans) : null,
+          firstPlanKeys: pricingData?.plans?.[0] ? Object.keys(pricingData.plans[0]) : null,
+          firstPlanHasFields: pricingData?.plans?.[0]?.fields ? true : false,
+        })
+        
+        // Check if it's a reference field structure with .items (like benefits.cards)
+        // Try both pricingData and fields directly
+        if (pricingData?.plans?.items && Array.isArray(pricingData.plans.items)) {
+          plansData = pricingData.plans.items
+          console.log('[mapHomepage] Plans: Using pricingData.plans.items, count:', plansData.length)
+        }
+        else if (fields?.pricing?.plans?.items && Array.isArray(fields.pricing.plans.items)) {
+          plansData = fields.pricing.plans.items
+          console.log('[mapHomepage] Plans: Using fields.pricing.plans.items, count:', plansData.length)
+        }
+        // Check if plans is directly an array (like features.items or testimonials.items)
+        // This is the most common case for reference fields
+        else if (Array.isArray(pricingData?.plans)) {
+          plansData = pricingData.plans
+          console.log('[mapHomepage] Plans: Using pricingData.plans (direct array), count:', plansData.length)
+        }
+        else if (Array.isArray(fields?.pricing?.plans)) {
+          plansData = fields.pricing.plans
+          console.log('[mapHomepage] Plans: Using fields.pricing.plans (direct array), count:', plansData.length)
+        }
+        // Additional fallback: Check if pricing group itself is an array and plans might be in first element
+        else if (Array.isArray(fields?.pricing) && fields.pricing.length > 0) {
+          const firstPricing = fields.pricing[0]
+          if (Array.isArray(firstPricing?.plans)) {
+            plansData = firstPricing.plans
+            console.log('[mapHomepage] Plans: Using fields.pricing[0].plans (from array group), count:', plansData.length)
+          }
+        }
+        // If plans doesn't exist or is empty, return empty array
+        else {
+          plansData = []
+          console.log('[mapHomepage] Plans: No plans data found, returning empty array')
+        }
+        
+        // CRITICAL: If plan objects only have uid/_content_type_uid/$ (no fields), 
+        // the references weren't included. We need to fetch them separately.
+        // This happens when includeReference doesn't work properly for nested references.
+        if (plansData.length > 0 && plansData[0]) {
+          const firstPlan = plansData[0]
+          const firstPlanKeys = Object.keys(firstPlan)
+          const hasOnlyMetadata = firstPlanKeys.every(key => ['uid', '_content_type_uid', '$'].includes(key))
+          
+          if (!firstPlan.fields && hasOnlyMetadata) {
+            console.warn('[mapHomepage] Plans: Reference fields not included (only UIDs found), using defaults', {
+              keys: firstPlanKeys,
+              hasFields: !!firstPlan.fields
+            })
+            // Note: Plans should have been fetched in fetchHomepage before mapHomepage is called
+            // If we still only have UIDs here, return empty array to use defaults
+            return []
+          }
+          
+          // Log the structure of the first plan for debugging
+          console.log('[mapHomepage] Plans: First plan structure:', {
+            keys: firstPlanKeys,
+            hasFields: !!firstPlan.fields,
+            fieldsKeys: firstPlan.fields ? Object.keys(firstPlan.fields) : null,
+            directKeys: firstPlan.fields ? null : firstPlanKeys.filter(k => !['uid', '_content_type_uid', '$'].includes(k))
+          })
+        }
+        
+        // Map plans to consistent structure (same pattern as benefits.cards)
+        // Contentstack reference field entries typically have data in p.fields
+        const mappedPlans = plansData.map((p, index) => {
+          // Contentstack reference entries have structure: { uid, _content_type_uid, fields: {...} }
+          // But sometimes the data is directly on p if it's already been processed
+          // Check if p has fields property (reference entry) or if data is directly on p
+          let planFields = p
+          
+          // If p has a fields property and it's an object with actual data (not just metadata)
+          if (p?.fields && typeof p.fields === 'object' && Object.keys(p.fields).length > 0) {
+            // Check if fields has actual field data (not just metadata keys)
+            const fieldKeys = Object.keys(p.fields)
+            const hasActualFields = fieldKeys.some(key => !['uid', '_content_type_uid', '$'].includes(key))
+            if (hasActualFields) {
+              planFields = p.fields
+            } else {
+              // If fields only has metadata, try using p directly
+              planFields = p
+            }
+          } else {
+            // No fields property or it's empty, use p directly
+            planFields = p
+          }
+          
+          // Get all possible field name variations
+          const name = planFields?.name || 
+                      planFields?.plan_name || 
+                      planFields?.title || 
+                      planFields?.heading ||
+                      planFields?.label ||
+                      ''
+          
+          const price = planFields?.price || 
+                       planFields?.price_amount || 
+                       planFields?.amount || 
+                       planFields?.cost ||
+                       ''
+          
+          const period = planFields?.period || 
+                        planFields?.price_period || 
+                        planFields?.billing_period || 
+                        planFields?.interval ||
+                        ''
+          
+          const description = planFields?.description || 
+                            planFields?.desc || 
+                            planFields?.subtitle ||
+                            planFields?.subheading ||
+                            ''
+          
+          // Features can be an array or a field name like 'features', 'feature_list', 'bullets', 'items'
+          let features = []
+          if (Array.isArray(planFields?.features)) {
+            features = planFields.features
+          } else if (Array.isArray(planFields?.feature_list)) {
+            features = planFields.feature_list
+          } else if (Array.isArray(planFields?.bullets)) {
+            features = planFields.bullets
+          } else if (Array.isArray(planFields?.items)) {
+            features = planFields.items.map(item => typeof item === 'string' ? item : item?.text || item?.name || '')
+          } else if (Array.isArray(planFields?.feature_items)) {
+            features = planFields.feature_items
+          }
+          
+          const popular = planFields?.popular || 
+                        planFields?.is_popular || 
+                        planFields?.is_popular_plan ||
+                        planFields?.most_popular ||
+                        false
+          
+          const mapped = {
+            name,
+            price,
+            period,
+            description,
+            features,
+            popular,
+          }
+          
+          // Log first plan mapping for debugging
+          if (index === 0) {
+            console.log('[mapHomepage] Plans: Mapped first plan:', mapped)
+          }
+          
+          return mapped
+        })
+        
+        console.log('[mapHomepage] Plans: Final mapped plans count:', mappedPlans.length)
+        return mappedPlans
+      })(),
+      note: (() => {
+        const value = pricingData?.note
+        if (value !== undefined && value !== null && value !== '') return value
+        return null
+      })(),
     },
     // footer may be a group with .link_groups or a direct array of groups
     footer: {

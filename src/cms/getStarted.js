@@ -76,7 +76,7 @@ export async function fetchGetStarted(forcedEntryUid = null) {
         .language(locale)
         .toJSON()
       
-      // Add cache-busting
+      // Add cache-busting - always use cache-busting for fresh data
       try {
         if (typeof entryQuery.addParam === 'function') {
           const timestamp = Date.now()
@@ -84,8 +84,12 @@ export async function fetchGetStarted(forcedEntryUid = null) {
           entryQuery.addParam('_t', timestamp)
           entryQuery.addParam('_timestamp', timestamp)
           
+          // In Live Preview, add additional no-cache params for drafts
           if (inIframe) {
             entryQuery.addParam('_nocache', timestamp)
+          } else {
+            // For direct website access, also add cache-busting to ensure fresh published content
+            entryQuery.addParam('_fresh', timestamp)
           }
         }
       } catch {}
@@ -94,7 +98,33 @@ export async function fetchGetStarted(forcedEntryUid = null) {
       try {
         e = await entryQuery.fetch()
       } catch (fetchError) {
-        console.warn('[GET_STARTED] Failed to fetch entry by UID:', fetchError)
+        // Handle 422 errors (entry doesn't exist) - clear invalid entry UID from storage
+        const is422Error = fetchError?.status === 422 || 
+                          fetchError?.error_code === 141 ||
+                          (typeof fetchError === 'object' && fetchError !== null && 'status' in fetchError && fetchError.status === 422) ||
+                          (fetchError?.error_message && fetchError.error_message.includes("doesn't exist"))
+        
+        if (is422Error && entryUid && typeof window !== 'undefined') {
+          // Entry doesn't exist - clear invalid UID from storage immediately
+          try {
+            const storedContentType = sessionStorage.getItem('contentstack_content_type')
+            if (storedContentType === 'get_started') {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_last_version')
+              sessionStorage.removeItem('contentstack_last_updated')
+            }
+            // Also clear from localStorage
+            const localContentType = localStorage.getItem('contentstack_content_type')
+            if (localContentType === 'get_started') {
+              localStorage.removeItem('contentstack_entry_uid')
+            }
+          } catch {}
+          // Clear entryUid so we fall through to query published entries
+          entryUid = ''
+          console.warn('[GET_STARTED] Entry UID invalid (422), falling back to query published entries')
+        } else {
+          console.warn('[GET_STARTED] Failed to fetch entry by UID:', fetchError)
+        }
       }
       entry = e || null
       
@@ -139,7 +169,20 @@ export async function fetchGetStarted(forcedEntryUid = null) {
           try {
             entry = await entryQuery.fetch()
           } catch (fetchError) {
-            // Silent fallback
+            // Handle 422 errors - clear invalid UID
+            const is422Error = fetchError?.status === 422 || 
+                              fetchError?.error_code === 141 ||
+                              (fetchError?.error_message && fetchError.error_message.includes("doesn't exist"))
+            if (is422Error && typeof window !== 'undefined') {
+              try {
+                const storedContentType = sessionStorage.getItem('contentstack_content_type')
+                if (storedContentType === 'get_started') {
+                  sessionStorage.removeItem('contentstack_entry_uid')
+                  sessionStorage.removeItem('contentstack_last_version')
+                  sessionStorage.removeItem('contentstack_last_updated')
+                }
+              } catch {}
+            }
           }
         } catch (e) {
           // Silent fallback
@@ -410,6 +453,13 @@ export function mapGetStarted(entry) {
   
   return {
     title: fields?.entry_title || fields?.title || entry?.title,
+    navigation: fields?.navigation ? {
+      brandName: fields.navigation.brand_name || fields.navigation.brandName,
+      items: (fields.navigation.nav_items || fields.navigation.items || []).map((item) => ({
+        name: item.name || item.label,
+        href: item.href || item.link || '#',
+      })),
+    } : null,
     hero: {
       heading: fields?.hero?.heading,
       subheading: fields?.hero?.subheading,

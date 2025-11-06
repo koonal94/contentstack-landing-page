@@ -4,16 +4,20 @@ import { Mail, Lock, Eye, EyeOff, Check, ArrowRight } from 'lucide-react'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
 import { fetchLogin, mapLogin } from '../cms/login'
+import { fetchHomepage, mapHomepage } from '../cms/homepage'
 import { initLivePreview, onLivePreviewChange } from '../cms/livePreview'
 import { getEditTag } from '../utils/getEditTag'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 function LoginPage() {
+  const location = useLocation()
   const [scrollY, setScrollY] = useState(0)
   const [cmsData, setCmsData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [entryUid, setEntryUid] = useState(null)
   const [entry, setEntry] = useState(null)
+  const [homepageData, setHomepageData] = useState(null)
+  const [homepageEntry, setHomepageEntry] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,6 +25,7 @@ function LoginPage() {
 
   const callbackWorkingRef = useRef(false)
   const callbackUpdateTimeRef = useRef(0)
+  const lastLocationRef = useRef(location.pathname)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -151,8 +156,24 @@ function LoginPage() {
       }, 600)
     }
     
-    async function load() {
+    async function load(forceFresh = false) {
       try {
+        // When navigating directly (not in Live Preview), clear stale sessionStorage
+        // to force fetching fresh published entry
+        if (forceFresh && typeof window !== 'undefined') {
+          try {
+            const inIframe = window.self !== window.top
+            if (!inIframe) {
+              // Clear stored entry UID for login page when not in Live Preview
+              // This ensures we fetch the latest published entry
+              const storedContentType = sessionStorage.getItem('contentstack_content_type')
+              if (storedContentType === 'login') {
+                sessionStorage.removeItem('contentstack_entry_uid')
+              }
+            }
+          } catch (e) {}
+        }
+        
         const fetchedEntry = await fetchLogin()
         const mapped = mapLogin(fetchedEntry)
         setCmsData(mapped)
@@ -166,6 +187,34 @@ function LoginPage() {
             sessionStorage.setItem('contentstack_content_type', 'login')
             sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
           } catch (e) {}
+        }
+        
+        // Fetch homepage data for navigation (logo text) to keep it consistent across pages
+        try {
+          const savedHomepageUid = sessionStorage.getItem('contentstack_entry_uid') || localStorage.getItem('contentstack_entry_uid')
+          const savedContentType = sessionStorage.getItem('contentstack_content_type') || localStorage.getItem('contentstack_content_type')
+          if (savedContentType === 'homepage') {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+            localStorage.removeItem('contentstack_entry_uid')
+            localStorage.removeItem('contentstack_content_type')
+          }
+          
+          // Pass ignoreStoredUid=true to force fetching published entry, not stored UID
+          const homepageEntry = await fetchHomepage(null, true)
+          if (homepageEntry) {
+            const homepageMapped = mapHomepage(homepageEntry)
+            setHomepageData(homepageMapped)
+            setHomepageEntry(homepageEntry)
+          }
+          
+          // Restore saved UID if it wasn't homepage
+          if (savedHomepageUid && savedContentType !== 'homepage') {
+            sessionStorage.setItem('contentstack_entry_uid', savedHomepageUid)
+            sessionStorage.setItem('contentstack_content_type', savedContentType)
+          }
+        } catch (e) {
+          // Silent error - navigation will use defaults
         }
       } catch (e) {
         console.warn('[LP LOAD] fetchLogin failed:', e)
@@ -181,6 +230,53 @@ function LoginPage() {
       if (updateTimer) clearTimeout(updateTimer)
     }
   }, [])
+  
+  // Refetch data when route changes (navigation from other pages)
+  useEffect(() => {
+    const currentPath = location.pathname
+    const previousPath = lastLocationRef.current
+    
+    // Only refetch if we're navigating TO this page (not initial mount)
+    if (currentPath === '/login' && previousPath !== '/login' && previousPath !== '') {
+      setLoading(true)
+      async function reload() {
+        try {
+          // Clear stale data and force fresh fetch
+          const inIframe = typeof window !== 'undefined' && window.self !== window.top
+          if (!inIframe) {
+            // Not in Live Preview - clear stored UID to get fresh published entry
+            const storedContentType = sessionStorage.getItem('contentstack_content_type')
+            if (storedContentType === 'login') {
+              sessionStorage.removeItem('contentstack_entry_uid')
+            }
+          }
+          
+          const fetchedEntry = await fetchLogin()
+          const mapped = mapLogin(fetchedEntry)
+          setCmsData(mapped)
+          
+          const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
+          setEntry(entryWithTags)
+          
+          if (fetchedEntry?.uid) {
+            setEntryUid(fetchedEntry.uid)
+            try {
+              sessionStorage.setItem('contentstack_content_type', 'login')
+              sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+            } catch (e) {}
+          }
+        } catch (e) {
+          console.warn('[LOGIN] Reload failed:', e)
+        } finally {
+          setLoading(false)
+        }
+      }
+      reload()
+    }
+    
+    // Update the ref for next comparison
+    lastLocationRef.current = currentPath
+  }, [location.pathname])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -188,6 +284,21 @@ function LoginPage() {
       
       const unsubscribeFn = onLivePreviewChange(async (data) => {
         if (!data || !data.entry_uid) return
+        
+        // Check if this is a homepage update (for navigation logo)
+        if (data.content_type_uid === 'homepage' || data.contentTypeUid === 'homepage') {
+          try {
+            const homepageEntry = await fetchHomepage(data.entry_uid, false)
+            if (homepageEntry) {
+              const homepageMapped = mapHomepage(homepageEntry)
+              setHomepageData(homepageMapped)
+              setHomepageEntry(homepageEntry)
+            }
+          } catch (e) {
+            // Silent error handling
+          }
+          return
+        }
         
         const stored = sessionStorage.getItem('contentstack_entry_uid')
         if (!stored || stored !== data.entry_uid) {
@@ -244,8 +355,8 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-primary-50">
-      <Navigation scrollY={scrollY} data={cmsData?.navigation || {}} entry={entry} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
+      <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} />
       
       <section className="pt-32 pb-20 md:pt-40 md:pb-32">
         <div className="container-custom">
@@ -262,21 +373,21 @@ function LoginPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-6"
+                  className="inline-block px-4 py-2 bg-primary-900/50 text-primary-300 rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
                   {...getEditTag(entry, 'hero.eyebrow')}
                 >
                   {cmsData?.hero?.eyebrow || '🔐 Secure Access'}
                 </motion.div>
                 
                 <h1 
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
                   {...getEditTag(entry, 'hero.heading')}
                 >
                   {cmsData?.hero?.heading || 'Welcome Back'}
                 </h1>
                 
                 <p 
-                  className="text-xl text-gray-600 mb-8 leading-relaxed"
+                  className="text-xl text-gray-300 mb-8 leading-relaxed"
                   {...getEditTag(entry, 'hero.subheading')}
                 >
                   {cmsData?.hero?.subheading || 'Sign in to your account to access your dashboard and manage your content.'}
@@ -296,12 +407,12 @@ function LoginPage() {
                       transition={{ delay: 0.3 + idx * 0.1 }}
                       className="flex items-start space-x-3"
                     >
-                      <div className="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                        <Check className="w-4 h-4 text-primary-600" />
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary-900/50 border border-primary-700/50 rounded-full flex items-center justify-center mt-0.5">
+                        <Check className="w-4 h-4 text-primary-400" />
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-900">{feature.title}</div>
-                        <div className="text-sm text-gray-600">{feature.description}</div>
+                        <div className="font-semibold text-white">{feature.title}</div>
+                        <div className="text-sm text-gray-300">{feature.description}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -313,17 +424,17 @@ function LoginPage() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-2xl p-8 md:p-10"
+                className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10"
               >
                 <div className="mb-8">
                   <h2 
-                    className="text-2xl font-bold text-gray-900 mb-2"
+                    className="text-2xl font-bold text-white mb-2"
                     {...getEditTag(entry, 'form.title')}
                   >
                     {cmsData?.form?.title || 'Sign In'}
                   </h2>
                   <p 
-                    className="text-gray-600"
+                    className="text-gray-300"
                     {...getEditTag(entry, 'form.subtitle')}
                   >
                     {cmsData?.form?.subtitle || 'Enter your credentials to continue'}
@@ -334,7 +445,7 @@ function LoginPage() {
                   {/* Email */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-medium text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.email_label')}
                     >
                       {cmsData?.form?.emailLabel || 'Email Address'}
@@ -345,7 +456,7 @@ function LoginPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
                         placeholder="you@example.com"
                         required
                       />
@@ -355,7 +466,7 @@ function LoginPage() {
                   {/* Password */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-medium text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.password_label')}
                     >
                       {cmsData?.form?.passwordLabel || 'Password'}
@@ -366,14 +477,14 @@ function LoginPage() {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
                         placeholder="••••••••"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -387,10 +498,10 @@ function LoginPage() {
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        className="w-4 h-4 text-primary-600 border-gray-600 bg-gray-900 rounded focus:ring-primary-500"
                       />
                       <span 
-                        className="ml-2 text-sm text-gray-600"
+                        className="ml-2 text-sm text-gray-300"
                         {...getEditTag(entry, 'form.remember_me_text')}
                       >
                         {cmsData?.form?.rememberMe || 'Remember me'}
@@ -398,7 +509,7 @@ function LoginPage() {
                     </label>
                     <a 
                       href="#"
-                      className="text-sm text-primary-600 hover:text-primary-700"
+                      className="text-sm text-primary-400 hover:text-primary-300"
                       {...getEditTag(entry, 'form.forgot_password_text')}
                     >
                       {cmsData?.form?.forgotPassword || 'Forgot password?'}
@@ -420,11 +531,11 @@ function LoginPage() {
                   {/* Divider */}
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
+                      <div className="w-full border-t border-gray-700"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
                       <span 
-                        className="px-2 bg-white text-gray-500"
+                        className="px-2 bg-gray-800 text-gray-400"
                         {...getEditTag(entry, 'form.or_text')}
                       >
                         {cmsData?.form?.orText || 'Or continue with'}
@@ -436,7 +547,7 @@ function LoginPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-center px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-700 bg-gray-800 transition-colors"
                     >
                       <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -448,7 +559,7 @@ function LoginPage() {
                     </button>
                     <button
                       type="button"
-                      className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-center px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-700 bg-gray-800 transition-colors"
                     >
                       <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -458,9 +569,9 @@ function LoginPage() {
                   </div>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-600">
+                <div className="mt-6 text-center text-sm text-gray-400">
                   Don't have an account?{' '}
-                  <Link to="/get-started" className="text-primary-600 hover:text-primary-700 font-medium">
+                  <Link to="/get-started" className="text-primary-400 hover:text-primary-300 font-medium">
                     Get Started
                   </Link>
                 </div>
@@ -470,7 +581,7 @@ function LoginPage() {
         </div>
       </section>
 
-      <Footer data={cmsData?.footer || {}} entry={entry} />
+      <Footer data={homepageData?.footer || cmsData?.footer || {}} entry={homepageEntry || entry} />
     </div>
   )
 }

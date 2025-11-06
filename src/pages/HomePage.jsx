@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import Hero from '../components/Hero'
 import Features from '../components/Features'
@@ -23,6 +24,7 @@ function getEditTags(entry, fieldPath) {
 }
 
 function HomePage() {
+  const location = useLocation()
   const [scrollY, setScrollY] = useState(0)
   const [cmsData, setCmsData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -154,13 +156,13 @@ function HomePage() {
             // Clear it to prevent repeated failed attempts
             try {
               sessionStorage.removeItem('contentstack_entry_uid')
-              sessionStorage.removeItem('contentstack_last_version')
-              sessionStorage.removeItem('contentstack_last_updated')
+              sessionStorage.removeItem('contentstack_homepage_last_version')
+              sessionStorage.removeItem('contentstack_homepage_last_updated')
             } catch {}
             return
           }
           
-          if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits)) {
+          if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.pricing)) {
             entry.fields = {}
             Object.keys(entry).forEach(key => {
               if (!key.startsWith('_') && key !== 'uid' && key !== '$' && key !== 'fields' && 
@@ -186,10 +188,10 @@ function HomePage() {
           })
           
           if (entry._version) {
-            sessionStorage.setItem('contentstack_last_version', String(entry._version))
+            sessionStorage.setItem('contentstack_homepage_last_version', String(entry._version))
           }
           if (entry.updated_at) {
-            sessionStorage.setItem('contentstack_last_updated', String(entry.updated_at))
+            sessionStorage.setItem('contentstack_homepage_last_updated', String(entry.updated_at))
           }
           if (entry?.uid) {
             setEntryUid(entry.uid)
@@ -201,8 +203,8 @@ function HomePage() {
               (e?.error_message && e.error_message.includes("doesn't exist"))) {
             try {
               sessionStorage.removeItem('contentstack_entry_uid')
-              sessionStorage.removeItem('contentstack_last_version')
-              sessionStorage.removeItem('contentstack_last_updated')
+              sessionStorage.removeItem('contentstack_homepage_last_version')
+              sessionStorage.removeItem('contentstack_homepage_last_updated')
             } catch {}
           }
           // Silent error handling for other errors
@@ -212,6 +214,15 @@ function HomePage() {
     
     async function load() {
       try {
+        // Clear stored UIDs to ensure we fetch published entry (not draft)
+        try {
+          const storedContentType = sessionStorage.getItem('contentstack_content_type')
+          if (storedContentType !== 'homepage') {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+          }
+        } catch (e) {}
+        
         const fetchedEntry = await fetchHomepage()
         const mapped = mapHomepage(fetchedEntry)
         setCmsData(mapped)
@@ -223,16 +234,31 @@ function HomePage() {
           setEntryUid(fetchedEntry.uid)
           try {
             sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
-            if (fetchedEntry._version) {
-              sessionStorage.setItem('contentstack_last_version', String(fetchedEntry._version))
-            }
-            if (fetchedEntry.updated_at) {
-              sessionStorage.setItem('contentstack_last_updated', String(fetchedEntry.updated_at))
-            }
+            sessionStorage.setItem('contentstack_content_type', 'homepage')
+          } catch (e) {}
+        }
+        if (fetchedEntry?._version) {
+          try {
+            sessionStorage.setItem('contentstack_homepage_last_version', String(fetchedEntry._version))
+          } catch (e) {}
+        }
+        if (fetchedEntry?.updated_at) {
+          try {
+            sessionStorage.setItem('contentstack_homepage_last_updated', String(fetchedEntry.updated_at))
           } catch (e) {}
         }
       } catch (e) {
         console.warn('[LP LOAD] fetchHomepage failed:', e)
+        // If 422 error, clear invalid UID
+        if (e?.status === 422 || e?.error_code === 141 || 
+            (e?.error_message && e.error_message.includes("doesn't exist"))) {
+          try {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+            sessionStorage.removeItem('contentstack_homepage_last_version')
+            sessionStorage.removeItem('contentstack_homepage_last_updated')
+          } catch {}
+        }
       } finally {
         setLoading(false)
       }
@@ -265,7 +291,7 @@ function HomePage() {
           const entry = await fetchHomepage(data.entry_uid)
           if (!entry) return
           
-          if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits)) {
+          if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.pricing)) {
             entry.fields = {}
             Object.keys(entry).forEach(key => {
               if (!key.startsWith('_') && key !== 'uid' && key !== '$' && key !== 'fields' && 
@@ -305,44 +331,35 @@ function HomePage() {
         if (pollInterval) return
         
         pollInterval = setInterval(async () => {
-          const stored = sessionStorage.getItem('contentstack_entry_uid')
-          if (!stored) {
-            // If no stored UID, clear interval to stop polling
-            if (pollInterval) {
-              clearInterval(pollInterval)
-              pollInterval = null
-            }
-            return
-          }
-          
           try {
-            const entry = await fetchHomepage(stored)
-            if (!entry) {
-              // If entry is null and we had a stored UID, it might be invalid
-              // Clear it to prevent repeated failed attempts and stop polling
+            // Temporarily clear stored UID to ensure we fetch published entry
+            const savedUid = sessionStorage.getItem('contentstack_entry_uid')
+            const savedContentType = sessionStorage.getItem('contentstack_content_type')
+            try {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_content_type')
+            } catch {}
+            
+            // Fetch latest published entry (no UID to get published)
+            const entry = await fetchHomepage()
+            
+            // Restore saved UID if needed
+            if (savedUid && savedContentType === 'homepage') {
               try {
-                sessionStorage.removeItem('contentstack_entry_uid')
-                sessionStorage.removeItem('contentstack_last_version')
-                sessionStorage.removeItem('contentstack_last_updated')
-                localStorage.removeItem('contentstack_entry_uid')
-                localStorage.removeItem('contentstack_last_version')
-                localStorage.removeItem('contentstack_last_updated')
+                sessionStorage.setItem('contentstack_entry_uid', savedUid)
+                sessionStorage.setItem('contentstack_content_type', savedContentType)
               } catch {}
-              // Stop polling if entry is invalid
-              if (pollInterval) {
-                clearInterval(pollInterval)
-                pollInterval = null
-              }
-              return
             }
             
-            const lastVersion = sessionStorage.getItem('contentstack_last_version')
-            const lastUpdated = sessionStorage.getItem('contentstack_last_updated')
+            if (!entry) return
             
-            if (lastVersion && entry._version && String(entry._version) === lastVersion) {
-              return // No changes
-            }
-            if (lastUpdated && entry.updated_at && String(entry.updated_at) === lastUpdated) {
+            const lastVersion = sessionStorage.getItem('contentstack_homepage_last_version')
+            const lastUpdated = sessionStorage.getItem('contentstack_homepage_last_updated')
+            
+            const versionChanged = lastVersion && entry._version && String(entry._version) !== lastVersion
+            const updatedChanged = lastUpdated && entry.updated_at && String(entry.updated_at) !== lastUpdated
+            
+            if (!versionChanged && !updatedChanged && lastVersion && lastUpdated) {
               return // No changes
             }
             
@@ -361,46 +378,31 @@ function HomePage() {
               return newStr !== prevStr ? entryClone : prev
             })
             
+            if (entry.uid) {
+              sessionStorage.setItem('contentstack_entry_uid', entry.uid)
+              sessionStorage.setItem('contentstack_content_type', 'homepage')
+            }
             if (entry._version) {
-              sessionStorage.setItem('contentstack_last_version', String(entry._version))
+              sessionStorage.setItem('contentstack_homepage_last_version', String(entry._version))
             }
             if (entry.updated_at) {
-              sessionStorage.setItem('contentstack_last_updated', String(entry.updated_at))
+              sessionStorage.setItem('contentstack_homepage_last_updated', String(entry.updated_at))
             }
           } catch (e) {
-            // If error indicates entry doesn't exist (422), clear invalid UID and stop polling
-            const is422Error = e?.status === 422 || 
-                              e?.error_code === 141 || 
-                              (e?.error_message && e.error_message.includes("doesn't exist")) ||
-                              (typeof e === 'object' && e !== null && 'status' in e && e.status === 422)
-            
-            if (is422Error) {
-              try {
-                sessionStorage.removeItem('contentstack_entry_uid')
-                sessionStorage.removeItem('contentstack_last_version')
-                sessionStorage.removeItem('contentstack_last_updated')
-                localStorage.removeItem('contentstack_entry_uid')
-                localStorage.removeItem('contentstack_last_version')
-                localStorage.removeItem('contentstack_last_updated')
-              } catch {}
-              // Stop polling if entry doesn't exist
-              if (pollInterval) {
-                clearInterval(pollInterval)
-                pollInterval = null
-              }
-            }
-            // Silent error handling for other errors
+            // Silent error handling
           }
         }, 5000)
       }
       
-      if (typeof window !== 'undefined') {
-        try {
-          const inIframe = window.self !== window.top
-          if (inIframe) {
-            setTimeout(() => startPolling(), 500)
-          }
-        } catch {}
+      // Check if we're in live preview (iframe)
+      let inIframe = false
+      try {
+        inIframe = window.self !== window.top
+      } catch {}
+      
+      // Polling should run when NOT in live preview (regular browser) to detect published updates
+      if (!inIframe) {
+        setTimeout(() => startPolling(), 500)
       }
       
       return () => {
@@ -418,8 +420,36 @@ function HomePage() {
     }
   }, [])
 
+  // Handle hash navigation on page load
+  useEffect(() => {
+    if (location.hash) {
+      const hash = location.hash.substring(1) // Remove the #
+      const scrollToElement = (hashId, retries = 5) => {
+        const element = document.getElementById(hashId)
+        if (element) {
+          // Account for fixed navbar height
+          const yOffset = -100
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+          window.scrollTo({ top: y, behavior: 'smooth' })
+          return true
+        }
+        
+        // If element not found and retries remaining, try again
+        if (retries > 0) {
+          setTimeout(() => scrollToElement(hashId, retries - 1), 100 * (6 - retries))
+        }
+        return false
+      }
+      
+      // Wait for page to load, then scroll
+      setTimeout(() => {
+        scrollToElement(hash)
+      }, 300)
+    }
+  }, [location.hash])
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-900">
       <Navigation scrollY={scrollY} data={cmsData?.navigation} entry={entry} />
       <Hero data={cmsData?.hero} loading={loading} entry={entry} />
       <Features data={cmsData?.features} entry={entry} />

@@ -4,16 +4,20 @@ import { Mail, User, Building, Check, ArrowRight, Sparkles } from 'lucide-react'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
 import { fetchGetStarted, mapGetStarted } from '../cms/getStarted'
+import { fetchHomepage, mapHomepage } from '../cms/homepage'
 import { initLivePreview, onLivePreviewChange } from '../cms/livePreview'
 import { getEditTag } from '../utils/getEditTag'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 function GetStartedPage() {
+  const location = useLocation()
   const [scrollY, setScrollY] = useState(0)
   const [cmsData, setCmsData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [entryUid, setEntryUid] = useState(null)
   const [entry, setEntry] = useState(null)
+  const [homepageData, setHomepageData] = useState(null)
+  const [homepageEntry, setHomepageEntry] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,6 +26,7 @@ function GetStartedPage() {
 
   const callbackWorkingRef = useRef(false)
   const callbackUpdateTimeRef = useRef(0)
+  const lastLocationRef = useRef(location.pathname)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -158,8 +163,26 @@ function GetStartedPage() {
       }, 600)
     }
     
-    async function load() {
+    async function load(forceFresh = false) {
       try {
+        // When navigating directly (not in Live Preview), clear stale sessionStorage
+        // to force fetching fresh published entry
+        if (forceFresh && typeof window !== 'undefined') {
+          try {
+            const inIframe = window.self !== window.top
+            if (!inIframe) {
+              // Clear stored entry UID for get_started page when not in Live Preview
+              // This ensures we fetch the latest published entry
+              const storedContentType = sessionStorage.getItem('contentstack_content_type')
+              if (storedContentType === 'get_started') {
+                sessionStorage.removeItem('contentstack_entry_uid')
+                sessionStorage.removeItem('contentstack_last_version')
+                sessionStorage.removeItem('contentstack_last_updated')
+              }
+            }
+          } catch (e) {}
+        }
+        
         const fetchedEntry = await fetchGetStarted()
         const mapped = mapGetStarted(fetchedEntry)
         setCmsData(mapped)
@@ -184,6 +207,34 @@ function GetStartedPage() {
             sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
           } catch (e) {}
         }
+        
+        // Fetch homepage data for navigation (logo text) to keep it consistent across pages
+        try {
+          const savedHomepageUid = sessionStorage.getItem('contentstack_entry_uid') || localStorage.getItem('contentstack_entry_uid')
+          const savedContentType = sessionStorage.getItem('contentstack_content_type') || localStorage.getItem('contentstack_content_type')
+          if (savedContentType === 'homepage') {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+            localStorage.removeItem('contentstack_entry_uid')
+            localStorage.removeItem('contentstack_content_type')
+          }
+          
+          // Pass ignoreStoredUid=true to force fetching published entry, not stored UID
+          const homepageEntry = await fetchHomepage(null, true)
+          if (homepageEntry) {
+            const homepageMapped = mapHomepage(homepageEntry)
+            setHomepageData(homepageMapped)
+            setHomepageEntry(homepageEntry)
+          }
+          
+          // Restore saved UID if it wasn't homepage
+          if (savedHomepageUid && savedContentType !== 'homepage') {
+            sessionStorage.setItem('contentstack_entry_uid', savedHomepageUid)
+            sessionStorage.setItem('contentstack_content_type', savedContentType)
+          }
+        } catch (e) {
+          // Silent error - navigation will use defaults
+        }
       } catch (e) {
         console.warn('[LP LOAD] fetchGetStarted failed:', e)
       } finally {
@@ -198,6 +249,65 @@ function GetStartedPage() {
       if (updateTimer) clearTimeout(updateTimer)
     }
   }, [])
+  
+  // Refetch data when route changes (navigation from other pages)
+  useEffect(() => {
+    const currentPath = location.pathname
+    const previousPath = lastLocationRef.current
+    
+    // Only refetch if we're navigating TO this page (not initial mount)
+    if (currentPath === '/get-started' && previousPath !== '/get-started' && previousPath !== '') {
+      setLoading(true)
+      async function reload() {
+        try {
+          // Clear stale data and force fresh fetch
+          const inIframe = typeof window !== 'undefined' && window.self !== window.top
+          if (!inIframe) {
+            // Not in Live Preview - clear stored UID to get fresh published entry
+            const storedContentType = sessionStorage.getItem('contentstack_content_type')
+            if (storedContentType === 'get_started') {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_last_version')
+              sessionStorage.removeItem('contentstack_last_updated')
+            }
+          }
+          
+          const fetchedEntry = await fetchGetStarted()
+          const mapped = mapGetStarted(fetchedEntry)
+          setCmsData(mapped)
+          
+          const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
+          setEntry(entryWithTags)
+          
+          if (fetchedEntry?._version) {
+            try {
+              sessionStorage.setItem('contentstack_last_version', String(fetchedEntry._version))
+            } catch (e) {}
+          }
+          if (fetchedEntry?.updated_at) {
+            try {
+              sessionStorage.setItem('contentstack_last_updated', String(fetchedEntry.updated_at))
+            } catch (e) {}
+          }
+          if (fetchedEntry?.uid) {
+            setEntryUid(fetchedEntry.uid)
+            try {
+              sessionStorage.setItem('contentstack_content_type', 'get_started')
+              sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+            } catch (e) {}
+          }
+        } catch (e) {
+          console.warn('[GET_STARTED] Reload failed:', e)
+        } finally {
+          setLoading(false)
+        }
+      }
+      reload()
+    }
+    
+    // Update the ref for next comparison
+    lastLocationRef.current = currentPath
+  }, [location.pathname])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -205,6 +315,21 @@ function GetStartedPage() {
       
       const unsubscribeFn = onLivePreviewChange(async (data) => {
         if (!data || !data.entry_uid) return
+        
+        // Check if this is a homepage update (for navigation logo)
+        if (data.content_type_uid === 'homepage' || data.contentTypeUid === 'homepage') {
+          try {
+            const homepageEntry = await fetchHomepage(data.entry_uid, false)
+            if (homepageEntry) {
+              const homepageMapped = mapHomepage(homepageEntry)
+              setHomepageData(homepageMapped)
+              setHomepageEntry(homepageEntry)
+            }
+          } catch (e) {
+            // Silent error handling
+          }
+          return
+        }
         
         const stored = sessionStorage.getItem('contentstack_entry_uid')
         if (!stored || stored !== data.entry_uid) {
@@ -329,8 +454,8 @@ function GetStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-primary-50">
-      <Navigation scrollY={scrollY} data={cmsData?.navigation || {}} entry={entry} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
+      <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} />
       
       <section className="pt-32 pb-20 md:pt-40 md:pb-32">
         <div className="container-custom">
@@ -346,21 +471,21 @@ function GetStartedPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-6"
+                className="inline-block px-4 py-2 bg-primary-900/50 text-primary-300 rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
                 {...getEditTag(entry, 'hero.eyebrow')}
               >
                 {cmsData?.hero?.eyebrow || '🚀 Start Your Journey'}
               </motion.div>
               
               <h1 
-                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
                 {...getEditTag(entry, 'hero.heading')}
               >
                 {cmsData?.hero?.heading || 'Get Started Today'}
               </h1>
               
               <p 
-                className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed"
+                className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed"
                 {...getEditTag(entry, 'hero.subheading')}
               >
                 {cmsData?.hero?.subheading || 'Join thousands of companies building modern digital experiences with our platform.'}
@@ -372,7 +497,7 @@ function GetStartedPage() {
               <div className="space-y-12">
                 {/* Steps */}
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-8">How It Works</h2>
+                  <h2 className="text-2xl font-bold text-white mb-8">How It Works</h2>
                   <div className="space-y-6">
                     {(cmsData?.steps || [
                       { number: 1, title: 'Create Your Account', description: 'Sign up with your email and company details' },
@@ -390,8 +515,8 @@ function GetStartedPage() {
                           {step.number || idx + 1}
                         </div>
                         <div className="flex-1 pt-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{step.title}</h3>
-                          <p className="text-gray-600">{step.description}</p>
+                          <h3 className="text-lg font-semibold text-white mb-1">{step.title}</h3>
+                          <p className="text-gray-300">{step.description}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -400,7 +525,7 @@ function GetStartedPage() {
 
                 {/* Benefits */}
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">What You'll Get</h2>
+                  <h2 className="text-2xl font-bold text-white mb-6">What You'll Get</h2>
                   <div className="space-y-4">
                     {(cmsData?.benefits || [
                       { title: '14-day free trial', description: 'Full access to all features' },
@@ -414,12 +539,12 @@ function GetStartedPage() {
                         transition={{ delay: 0.5 + idx * 0.1 }}
                         className="flex items-start space-x-3"
                       >
-                        <div className="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                          <Check className="w-4 h-4 text-primary-600" />
+                        <div className="flex-shrink-0 w-6 h-6 bg-primary-900/50 border border-primary-700/50 rounded-full flex items-center justify-center mt-0.5">
+                          <Check className="w-4 h-4 text-primary-400" />
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900">{benefit.title}</div>
-                          <div className="text-sm text-gray-600">{benefit.description}</div>
+                          <div className="font-semibold text-white">{benefit.title}</div>
+                          <div className="text-sm text-gray-300">{benefit.description}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -432,17 +557,17 @@ function GetStartedPage() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 sticky top-32"
+                className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10 sticky top-32"
               >
                 <div className="mb-8">
                   <h2 
-                    className="text-2xl font-bold text-gray-900 mb-2"
+                    className="text-2xl font-bold text-white mb-2"
                     {...getEditTag(entry, 'form.title')}
                   >
                     {cmsData?.form?.title || 'Create Your Account'}
                   </h2>
                   <p 
-                    className="text-gray-600"
+                    className="text-gray-300"
                     {...getEditTag(entry, 'form.subtitle')}
                   >
                     {cmsData?.form?.subtitle || 'Fill in your details to get started'}
@@ -453,7 +578,7 @@ function GetStartedPage() {
                   {/* Name */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-medium text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.name_label')}
                     >
                       {cmsData?.form?.nameLabel || 'Full Name'}
@@ -464,7 +589,7 @@ function GetStartedPage() {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
                         placeholder="John Doe"
                         required
                       />
@@ -474,7 +599,7 @@ function GetStartedPage() {
                   {/* Email */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-medium text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.email_label')}
                     >
                       {cmsData?.form?.emailLabel || 'Email Address'}
@@ -485,7 +610,7 @@ function GetStartedPage() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
                         placeholder="you@example.com"
                         required
                       />
@@ -495,7 +620,7 @@ function GetStartedPage() {
                   {/* Company */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="block text-sm font-medium text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.company_label')}
                     >
                       {cmsData?.form?.companyLabel || 'Company Name'}
@@ -506,7 +631,7 @@ function GetStartedPage() {
                         type="text"
                         value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
                         placeholder="Your Company"
                         required
                       />
@@ -517,10 +642,10 @@ function GetStartedPage() {
                   <div className="flex items-start">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mt-1"
+                      className="w-4 h-4 text-primary-600 border-gray-600 bg-gray-900 rounded focus:ring-primary-500 mt-1"
                       required
                     />
-                    <label className="ml-2 text-sm text-gray-600">
+                    <label className="ml-2 text-sm text-gray-300">
                       <span {...getEditTag(entry, 'form.terms_text')}>
                         {cmsData?.form?.termsText || 'I agree to the Terms of Service and Privacy Policy'}
                       </span>
@@ -540,9 +665,9 @@ function GetStartedPage() {
                   </motion.button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-600">
+                <div className="mt-6 text-center text-sm text-gray-400">
                   Already have an account?{' '}
-                  <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+                  <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
                     Sign In
                   </Link>
                 </div>
@@ -552,7 +677,7 @@ function GetStartedPage() {
         </div>
       </section>
 
-      <Footer data={cmsData?.footer || {}} entry={entry} />
+      <Footer data={homepageData?.footer || cmsData?.footer || {}} entry={homepageEntry || entry} />
     </div>
   )
 }

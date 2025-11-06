@@ -66,33 +66,72 @@ export function getEditTag(entry, fieldPath) {
     return {}
   }
   
-  const groupField = parts[0] // e.g., 'hero', 'navigation'
-  const fieldName = parts[1]  // e.g., 'heading', 'brand_name'
+  const groupField = parts[0] // e.g., 'hero', 'navigation', 'benefits'
   
-  // CRITICAL: Try multiple locations where Contentstack might store edit tags
-  // The addEditableTags function can place tags in different locations depending on SDK version
-  
-  // Approach 1: entry.fields.group.$.field (most common - where we manually create them)
-  if (entry?.fields?.[groupField]?.$?.[fieldName]) {
-    const tag = entry.fields[groupField].$[fieldName]
-    if (tag && tag['data-cslp']) {
-      return tag
+  // Handle nested paths like 'benefits.cards.0.title' or 'benefits.cards'
+  if (parts.length === 2) {
+    // Simple case: group.field (e.g., 'hero.heading')
+    const fieldName = parts[1]
+    
+    // Approach 1: entry.fields.group.$.field (most common - where we manually create them)
+    if (entry?.fields?.[groupField]?.$?.[fieldName]) {
+      const tag = entry.fields[groupField].$[fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
     }
-  }
-  
-  // Approach 2: entry.$.group.field (flat structure)
-  if (entry?.$?.[groupField]?.[fieldName]) {
-    const tag = entry.$[groupField][fieldName]
-    if (tag && tag['data-cslp']) {
-      return tag
+    
+    // Approach 2: entry.$.group.field (flat structure)
+    if (entry?.$?.[groupField]?.[fieldName]) {
+      const tag = entry.$[groupField][fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
     }
-  }
-  
-  // Approach 3: entry.fields.group.field.$ (alternative nested)
-  if (entry?.fields?.[groupField]?.[fieldName]?.$) {
-    const tag = entry.fields[groupField][fieldName].$
-    if (tag && tag['data-cslp']) {
-      return tag
+    
+    // Approach 3: entry.fields.group.field.$ (alternative nested)
+    if (entry?.fields?.[groupField]?.[fieldName]?.$) {
+      const tag = entry.fields[groupField][fieldName].$
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
+    }
+  } else if (parts.length === 3 && parts[1] === 'cards') {
+    // Handle 'benefits.cards.0' or 'benefits.cards.index' - use the cards field tag
+    // For reference fields, Contentstack creates edit tags at the reference field level
+    // So we use 'benefits.cards' edit tag for individual cards
+    const fieldName = 'cards'
+    
+    if (entry?.fields?.[groupField]?.$?.[fieldName]) {
+      const tag = entry.fields[groupField].$[fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
+    }
+    
+    if (entry?.$?.[groupField]?.[fieldName]) {
+      const tag = entry.$[groupField][fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
+    }
+  } else if (parts.length >= 3) {
+    // Handle deeply nested paths like 'benefits.cards.0.title'
+    // For reference field items, use the parent reference field tag
+    const fieldName = parts[1] // 'cards' in 'benefits.cards.0.title'
+    
+    if (entry?.fields?.[groupField]?.$?.[fieldName]) {
+      const tag = entry.fields[groupField].$[fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
+    }
+    
+    if (entry?.$?.[groupField]?.[fieldName]) {
+      const tag = entry.$[groupField][fieldName]
+      if (tag && tag['data-cslp']) {
+        return tag
+      }
     }
   }
   
