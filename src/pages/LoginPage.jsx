@@ -158,18 +158,29 @@ function LoginPage() {
     
     async function load(forceFresh = false) {
       try {
-        // When navigating directly (not in Live Preview), clear stale sessionStorage
-        // to force fetching fresh published entry
-        if (forceFresh && typeof window !== 'undefined') {
+        // Check if we're in Live Preview (iframe)
+        let inIframe = false
+        try {
+          inIframe = window.self !== window.top
+        } catch {}
+        
+        // CRITICAL: When NOT in Live Preview (production/Launch), clear stored UIDs
+        // to ensure we always fetch published entries, not draft/unpublished entries
+        if (!inIframe) {
           try {
-            const inIframe = window.self !== window.top
-            if (!inIframe) {
-              // Clear stored entry UID for login page when not in Live Preview
-              // This ensures we fetch the latest published entry
-              const storedContentType = sessionStorage.getItem('contentstack_content_type')
-              if (storedContentType === 'login') {
-                sessionStorage.removeItem('contentstack_entry_uid')
-              }
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+            sessionStorage.removeItem('contentstack_last_version')
+            sessionStorage.removeItem('contentstack_last_updated')
+            localStorage.removeItem('contentstack_entry_uid')
+            localStorage.removeItem('contentstack_content_type')
+          } catch (e) {}
+        } else if (forceFresh) {
+          // In Live Preview, only clear if forceFresh is true
+          try {
+            const storedContentType = sessionStorage.getItem('contentstack_content_type')
+            if (storedContentType === 'login') {
+              sessionStorage.removeItem('contentstack_entry_uid')
             }
           } catch (e) {}
         }
@@ -181,12 +192,17 @@ function LoginPage() {
         const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
         setEntry(entryWithTags)
         
+        // CRITICAL: Only store entry UID in Live Preview (iframe)
+        // In production/Launch, don't store UIDs to ensure we always query for published entries
         if (fetchedEntry?.uid) {
           setEntryUid(fetchedEntry.uid)
-          try {
-            sessionStorage.setItem('contentstack_content_type', 'login')
-            sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
-          } catch (e) {}
+          if (inIframe) {
+            // Only store in Live Preview
+            try {
+              sessionStorage.setItem('contentstack_content_type', 'login')
+              sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+            } catch (e) {}
+          }
         }
         
         // Fetch homepage data for navigation (logo text) to keep it consistent across pages
@@ -241,14 +257,22 @@ function LoginPage() {
       setLoading(true)
       async function reload() {
         try {
-          // Clear stale data and force fresh fetch
-          const inIframe = typeof window !== 'undefined' && window.self !== window.top
+          // Check if we're in Live Preview (iframe)
+          let inIframe = false
+          try {
+            inIframe = typeof window !== 'undefined' && window.self !== window.top
+          } catch {}
+          
+          // CRITICAL: When NOT in Live Preview, clear stored UIDs
           if (!inIframe) {
-            // Not in Live Preview - clear stored UID to get fresh published entry
-            const storedContentType = sessionStorage.getItem('contentstack_content_type')
-            if (storedContentType === 'login') {
-              sessionStorage.removeItem('contentstack_entry_uid')
-            }
+            try {
+              const storedContentType = sessionStorage.getItem('contentstack_content_type')
+              if (storedContentType === 'login') {
+                sessionStorage.removeItem('contentstack_entry_uid')
+                sessionStorage.removeItem('contentstack_last_version')
+                sessionStorage.removeItem('contentstack_last_updated')
+              }
+            } catch (e) {}
           }
           
           const fetchedEntry = await fetchLogin()
@@ -258,12 +282,16 @@ function LoginPage() {
           const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
           setEntry(entryWithTags)
           
+          // CRITICAL: Only store entry UID in Live Preview (iframe)
           if (fetchedEntry?.uid) {
             setEntryUid(fetchedEntry.uid)
-            try {
-              sessionStorage.setItem('contentstack_content_type', 'login')
-              sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
-            } catch (e) {}
+            if (inIframe) {
+              // Only store in Live Preview
+              try {
+                sessionStorage.setItem('contentstack_content_type', 'login')
+                sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+              } catch (e) {}
+            }
           }
         } catch (e) {
           console.warn('[LOGIN] Reload failed:', e)
