@@ -214,14 +214,33 @@ function HomePage() {
     
     async function load() {
       try {
-        // Clear stored UIDs to ensure we fetch published entry (not draft)
+        // Check if we're in Live Preview (iframe)
+        let inIframe = false
         try {
-          const storedContentType = sessionStorage.getItem('contentstack_content_type')
-          if (storedContentType !== 'homepage') {
+          inIframe = window.self !== window.top
+        } catch {}
+        
+        // CRITICAL: When NOT in Live Preview (production/Launch), clear stored UIDs
+        // to ensure we always fetch published entries, not draft/unpublished entries
+        if (!inIframe) {
+          try {
             sessionStorage.removeItem('contentstack_entry_uid')
             sessionStorage.removeItem('contentstack_content_type')
-          }
-        } catch (e) {}
+            sessionStorage.removeItem('contentstack_homepage_last_version')
+            sessionStorage.removeItem('contentstack_homepage_last_updated')
+            localStorage.removeItem('contentstack_entry_uid')
+            localStorage.removeItem('contentstack_content_type')
+          } catch (e) {}
+        } else {
+          // In Live Preview, only clear if content type doesn't match
+          try {
+            const storedContentType = sessionStorage.getItem('contentstack_content_type')
+            if (storedContentType !== 'homepage') {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_content_type')
+            }
+          } catch (e) {}
+        }
         
         const fetchedEntry = await fetchHomepage()
         const mapped = mapHomepage(fetchedEntry)
@@ -230,19 +249,24 @@ function HomePage() {
         const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
         setEntry(entryWithTags)
         
+        // CRITICAL: Only store entry UID in Live Preview (iframe)
+        // In production/Launch, don't store UIDs to ensure we always query for published entries
         if (fetchedEntry?.uid) {
           setEntryUid(fetchedEntry.uid)
-          try {
-            sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
-            sessionStorage.setItem('contentstack_content_type', 'homepage')
-          } catch (e) {}
+          if (inIframe) {
+            // Only store in Live Preview
+            try {
+              sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+              sessionStorage.setItem('contentstack_content_type', 'homepage')
+            } catch (e) {}
+          }
         }
-        if (fetchedEntry?._version) {
+        if (fetchedEntry?._version && inIframe) {
           try {
             sessionStorage.setItem('contentstack_homepage_last_version', String(fetchedEntry._version))
           } catch (e) {}
         }
-        if (fetchedEntry?.updated_at) {
+        if (fetchedEntry?.updated_at && inIframe) {
           try {
             sessionStorage.setItem('contentstack_homepage_last_updated', String(fetchedEntry.updated_at))
           } catch (e) {}
@@ -378,14 +402,21 @@ function HomePage() {
               return newStr !== prevStr ? entryClone : prev
             })
             
-            if (entry.uid) {
+            // CRITICAL: Only store entry UID in Live Preview (iframe)
+            // In production/Launch, don't store UIDs to ensure we always query for published entries
+            let inIframe = false
+            try {
+              inIframe = window.self !== window.top
+            } catch {}
+            
+            if (entry.uid && inIframe) {
               sessionStorage.setItem('contentstack_entry_uid', entry.uid)
               sessionStorage.setItem('contentstack_content_type', 'homepage')
             }
-            if (entry._version) {
+            if (entry._version && inIframe) {
               sessionStorage.setItem('contentstack_homepage_last_version', String(entry._version))
             }
-            if (entry.updated_at) {
+            if (entry.updated_at && inIframe) {
               sessionStorage.setItem('contentstack_homepage_last_updated', String(entry.updated_at))
             }
           } catch (e) {

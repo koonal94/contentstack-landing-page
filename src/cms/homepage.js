@@ -45,16 +45,7 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
   const locale = import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
   let contentType = import.meta.env.VITE_CONTENTSTACK_CONTENT_TYPE_UID || 'homepage'
   
-  // Log environment info for debugging (only in production, not Live Preview)
-  if (!inIframe && typeof window !== 'undefined') {
-    console.log('[HOME] Fetching homepage entry:', {
-      environment,
-      contentType,
-      locale,
-      forcedEntryUid: forcedEntryUid || 'none',
-      ignoreStoredUid
-    })
-  }
+  // Logging removed to prevent console spam
   
   // CRITICAL: When NOT in live preview, ignore environment variable UIDs to fetch published entries
   // Only use forcedEntryUid (for live preview callbacks) or UIDs from URL (for live preview)
@@ -86,8 +77,9 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
     } catch {}
   }
   
-  // Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
-  // When NOT in live preview, skip stored UIDs to fetch published entries
+  // CRITICAL: Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // When NOT in live preview (production/Launch), NEVER use stored UIDs - always query published entries
+  // This ensures Launch website always fetches the latest published entry, not a stale draft UID
   // Also skip if ignoreStoredUid is true (for fetching homepage data for logo)
   if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
     try {
@@ -96,6 +88,27 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
       if (stored) {
         entryUid = stored
       }
+    } catch {}
+  }
+  
+  // CRITICAL FIX: When NOT in Live Preview (production/Launch), clear any stored UIDs
+  // to ensure we always query for published entries, not draft/unpublished entries
+  if (!inIframe && !forcedEntryUid && typeof window !== 'undefined') {
+    try {
+      // Clear stored UIDs that might point to draft/unpublished entries
+      // This ensures production always queries for published entries
+      const storedContentType = sessionStorage.getItem('contentstack_content_type')
+      if (storedContentType === contentType) {
+        sessionStorage.removeItem('contentstack_entry_uid')
+        sessionStorage.removeItem('contentstack_homepage_last_version')
+        sessionStorage.removeItem('contentstack_homepage_last_updated')
+      }
+      const localContentType = localStorage.getItem('contentstack_content_type')
+      if (localContentType === contentType) {
+        localStorage.removeItem('contentstack_entry_uid')
+      }
+      // Clear entryUid to force query for published entries
+      entryUid = ''
     } catch {}
   }
 
@@ -377,16 +390,16 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
 
   // Fallback: try default entry (works for published content)
   // CRITICAL: When NOT in Live Preview, always query for published entries
+  // This is the PRIMARY path for production/Launch websites
   if (!entry && !inIframe) {
     console.log('[HOME] Not in Live Preview - querying for published entries...', {
       environment,
       contentType,
-      locale,
-      hasStack: !!stack
+      locale
     })
     
     try {
-      // Try querying for entry with is_default = true
+      // Try querying for entry with is_default = true first
       const defaultQuery = base.where('is_default', true).limit(1)
       // Add cache-busting for published entries
       try {
@@ -409,6 +422,7 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
   }
 
   // Final fallback: latest updated homepage entry (only if not in Live Preview)
+  // This ensures we get the most recently published entry if no default is set
   if (!entry && !inIframe) {
     try {
       const publishedQuery = base.only(['*']).descending('updated_at').limit(1)
@@ -426,10 +440,12 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
       if (entry) {
         console.log('[HOME] Found latest published entry:', entry.uid)
       } else {
+        // Only log warning if no entry found (not spam)
         console.warn('[HOME] No published entries found. Check:')
-        console.warn('  1. Entry is published to environment:', environment)
-        console.warn('  2. Environment variable VITE_CONTENTSTACK_ENVIRONMENT matches published environment')
+        console.warn('  1. Environment variable VITE_CONTENTSTACK_ENVIRONMENT matches where you published')
+        console.warn('  2. Entry is actually published (not just saved)')
         console.warn('  3. Content type UID is correct:', contentType)
+        console.warn('  4. API credentials are correct')
       }
     } catch (e) {
       console.error('[HOME] Query for published entries failed:', e)
@@ -596,8 +612,7 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
       const hasOnlyMetadata = firstPlanKeys.every(key => ['uid', '_content_type_uid', '$'].includes(key))
       
       if (!firstPlan.fields && hasOnlyMetadata && firstPlan._content_type_uid) {
-        console.log('[fetchHomepage] Plans have only UIDs, fetching separately...')
-        // Fetch plans and populate fields
+        // Fetch plans and populate fields (logging removed to prevent spam)
         await populatePlanFields(entry, pricingPlans, firstPlan._content_type_uid)
       }
     }
@@ -621,7 +636,7 @@ async function populatePlanFields(entry, planRefs, contentTypeUid) {
       return
     }
     
-    console.log('[fetchHomepage] Fetching plans separately:', { contentTypeUid, planUids })
+    // Logging removed to prevent console spam
     
     // Fetch all plan entries by UID
     const planEntries = await Promise.all(
@@ -645,7 +660,7 @@ async function populatePlanFields(entry, planRefs, contentTypeUid) {
     // Populate the fields in the original entry structure
     const validPlans = planEntries.filter(Boolean)
     if (validPlans.length > 0) {
-      console.log('[fetchHomepage] Successfully fetched plans, populating fields:', validPlans.length)
+      // Logging removed to prevent console spam
       
       // Update entry.fields.pricing.plans with fetched data
       if (entry.fields && entry.fields.pricing && entry.fields.pricing.plans) {
@@ -835,47 +850,34 @@ export function mapHomepage(entry) {
         // Handle Reference field structure (same as benefits.cards, features.items, testimonials.items)
         let plansData = null
         
-        // Debug: Log the structure to understand what we're receiving
-        console.log('[mapHomepage] Pricing plans structure:', {
-          pricingData: pricingData ? Object.keys(pricingData) : null,
-          pricingDataPlans: pricingData?.plans ? (Array.isArray(pricingData.plans) ? `Array(${pricingData.plans.length})` : typeof pricingData.plans) : null,
-          fieldsPricingPlans: fields?.pricing?.plans ? (Array.isArray(fields.pricing.plans) ? `Array(${fields.pricing.plans.length})` : typeof fields.pricing.plans) : null,
-          firstPlanKeys: pricingData?.plans?.[0] ? Object.keys(pricingData.plans[0]) : null,
-          firstPlanHasFields: pricingData?.plans?.[0]?.fields ? true : false,
-        })
+        // Debug logging removed to prevent console spam
         
         // Check if it's a reference field structure with .items (like benefits.cards)
         // Try both pricingData and fields directly
         if (pricingData?.plans?.items && Array.isArray(pricingData.plans.items)) {
           plansData = pricingData.plans.items
-          console.log('[mapHomepage] Plans: Using pricingData.plans.items, count:', plansData.length)
         }
         else if (fields?.pricing?.plans?.items && Array.isArray(fields.pricing.plans.items)) {
           plansData = fields.pricing.plans.items
-          console.log('[mapHomepage] Plans: Using fields.pricing.plans.items, count:', plansData.length)
         }
         // Check if plans is directly an array (like features.items or testimonials.items)
         // This is the most common case for reference fields
         else if (Array.isArray(pricingData?.plans)) {
           plansData = pricingData.plans
-          console.log('[mapHomepage] Plans: Using pricingData.plans (direct array), count:', plansData.length)
         }
         else if (Array.isArray(fields?.pricing?.plans)) {
           plansData = fields.pricing.plans
-          console.log('[mapHomepage] Plans: Using fields.pricing.plans (direct array), count:', plansData.length)
         }
         // Additional fallback: Check if pricing group itself is an array and plans might be in first element
         else if (Array.isArray(fields?.pricing) && fields.pricing.length > 0) {
           const firstPricing = fields.pricing[0]
           if (Array.isArray(firstPricing?.plans)) {
             plansData = firstPricing.plans
-            console.log('[mapHomepage] Plans: Using fields.pricing[0].plans (from array group), count:', plansData.length)
           }
         }
         // If plans doesn't exist or is empty, return empty array
         else {
           plansData = []
-          console.log('[mapHomepage] Plans: No plans data found, returning empty array')
         }
         
         // CRITICAL: If plan objects only have uid/_content_type_uid/$ (no fields), 
@@ -887,22 +889,10 @@ export function mapHomepage(entry) {
           const hasOnlyMetadata = firstPlanKeys.every(key => ['uid', '_content_type_uid', '$'].includes(key))
           
           if (!firstPlan.fields && hasOnlyMetadata) {
-            console.warn('[mapHomepage] Plans: Reference fields not included (only UIDs found), using defaults', {
-              keys: firstPlanKeys,
-              hasFields: !!firstPlan.fields
-            })
             // Note: Plans should have been fetched in fetchHomepage before mapHomepage is called
             // If we still only have UIDs here, return empty array to use defaults
             return []
           }
-          
-          // Log the structure of the first plan for debugging
-          console.log('[mapHomepage] Plans: First plan structure:', {
-            keys: firstPlanKeys,
-            hasFields: !!firstPlan.fields,
-            fieldsKeys: firstPlan.fields ? Object.keys(firstPlan.fields) : null,
-            directKeys: firstPlan.fields ? null : firstPlanKeys.filter(k => !['uid', '_content_type_uid', '$'].includes(k))
-          })
         }
         
         // Map plans to consistent structure (same pattern as benefits.cards)
@@ -975,7 +965,7 @@ export function mapHomepage(entry) {
                         planFields?.most_popular ||
                         false
           
-          const mapped = {
+          return {
             name,
             price,
             period,
@@ -983,16 +973,8 @@ export function mapHomepage(entry) {
             features,
             popular,
           }
-          
-          // Log first plan mapping for debugging
-          if (index === 0) {
-            console.log('[mapHomepage] Plans: Mapped first plan:', mapped)
-          }
-          
-          return mapped
         })
         
-        console.log('[mapHomepage] Plans: Final mapped plans count:', mappedPlans.length)
         return mappedPlans
       })(),
       note: (() => {

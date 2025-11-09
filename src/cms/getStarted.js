@@ -30,28 +30,48 @@ export async function fetchGetStarted(forcedEntryUid = null) {
     if (hashMatch && !entryUid) {
       entryUid = hashMatch[1]
     }
-    
-    // CRITICAL: Only use stored entry UID if content type matches
-    if (!entryUid && typeof window !== 'undefined') {
-      try {
-        const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
-                                  localStorage.getItem('contentstack_content_type')
-        
-        if (storedContentType === 'get_started') {
-          const stored = localStorage.getItem('contentstack_entry_uid') || 
-                        sessionStorage.getItem('contentstack_entry_uid')
-          if (stored) {
-            entryUid = stored
-          }
-        }
-      } catch {}
-    }
   } catch {}
   
   let inIframe = false
   try {
     inIframe = window.self !== window.top
   } catch {}
+  
+  // CRITICAL: Only use stored entry UID if in Live Preview (iframe) AND content type matches
+  // When NOT in live preview (production/Launch), NEVER use stored UIDs - always query published entries
+  if (!entryUid && inIframe && typeof window !== 'undefined') {
+    try {
+      const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
+                                localStorage.getItem('contentstack_content_type')
+      
+      if (storedContentType === 'get_started') {
+        const stored = localStorage.getItem('contentstack_entry_uid') || 
+                      sessionStorage.getItem('contentstack_entry_uid')
+        if (stored) {
+          entryUid = stored
+        }
+      }
+    } catch {}
+  }
+  
+  // CRITICAL FIX: When NOT in Live Preview (production/Launch), clear any stored UIDs
+  // to ensure we always query for published entries, not draft/unpublished entries
+  if (!inIframe && !forcedEntryUid && typeof window !== 'undefined') {
+    try {
+      const storedContentType = sessionStorage.getItem('contentstack_content_type')
+      if (storedContentType === contentType) {
+        sessionStorage.removeItem('contentstack_entry_uid')
+        sessionStorage.removeItem('contentstack_last_version')
+        sessionStorage.removeItem('contentstack_last_updated')
+      }
+      const localContentType = localStorage.getItem('contentstack_content_type')
+      if (localContentType === contentType) {
+        localStorage.removeItem('contentstack_entry_uid')
+      }
+      // Clear entryUid to force query for published entries
+      entryUid = ''
+    } catch {}
+  }
   
   async function run(q) {
     const result = await q.find()
@@ -251,9 +271,32 @@ export async function fetchGetStarted(forcedEntryUid = null) {
   }
   
   // Fallback: try latest entry (works for published content)
+  // CRITICAL: When NOT in Live Preview, always query for published entries
+  // This is the PRIMARY path for production/Launch websites
   if (!entry && !inIframe) {
+    console.log('[GET_STARTED] Not in Live Preview - querying for published entries...', {
+      environment: import.meta.env.VITE_CONTENTSTACK_ENVIRONMENT,
+      contentType,
+      locale
+    })
+    
     try {
-      entry = await run(base.only(['*']).descending('updated_at').limit(1))
+      const publishedQuery = base.only(['*']).descending('updated_at').limit(1)
+      // Add cache-busting for published entries to ensure we get latest
+      try {
+        if (typeof publishedQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          publishedQuery.addParam('_cb', timestamp)
+          publishedQuery.addParam('_t', timestamp)
+          publishedQuery.addParam('_fresh', timestamp)
+        }
+      } catch {}
+      
+      entry = await run(publishedQuery)
+      
+      if (entry) {
+        console.log('[GET_STARTED] Found latest published entry:', entry.uid)
+      }
       
       // Normalize entry structure if found
       if (entry && !entry.fields && (entry.hero || entry.steps || entry.form || entry.benefits || entry.footer)) {
@@ -266,14 +309,32 @@ export async function fetchGetStarted(forcedEntryUid = null) {
         })
       }
     } catch (e) {
-      // Silent fallback
+      console.warn('[GET_STARTED] Query for published entries failed:', e)
     }
   }
   
   // Final fallback: latest updated entry (only if not in Live Preview)
   if (!entry && !inIframe) {
     try {
-      entry = await run(base.limit(1))
+      const fallbackQuery = base.limit(1)
+      // Add cache-busting
+      try {
+        if (typeof fallbackQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          fallbackQuery.addParam('_cb', timestamp)
+          fallbackQuery.addParam('_t', timestamp)
+        }
+      } catch {}
+      
+      entry = await run(fallbackQuery)
+      
+      if (!entry) {
+        console.warn('[GET_STARTED] No published entries found. Check:')
+        console.warn('  1. Environment variable VITE_CONTENTSTACK_ENVIRONMENT matches where you published')
+        console.warn('  2. Entry is actually published (not just saved)')
+        console.warn('  3. Content type UID is correct:', contentType)
+        console.warn('  4. API credentials are correct')
+      }
       
       // Normalize entry structure if found
       if (entry && !entry.fields && (entry.hero || entry.steps || entry.form || entry.benefits || entry.footer)) {
@@ -286,7 +347,7 @@ export async function fetchGetStarted(forcedEntryUid = null) {
         })
       }
     } catch (e) {
-      // Silent fallback
+      console.error('[GET_STARTED] Final fallback query failed:', e)
     }
   }
   
