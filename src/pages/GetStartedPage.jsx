@@ -163,25 +163,16 @@ function GetStartedPage() {
       }, 600)
     }
     
-    async function load(forceFresh = false) {
+    async function load() {
       try {
-        // When navigating directly (not in Live Preview), clear stale sessionStorage
-        // to force fetching fresh published entry
-        if (forceFresh && typeof window !== 'undefined') {
-          try {
-            const inIframe = window.self !== window.top
-            if (!inIframe) {
-              // Clear stored entry UID for get_started page when not in Live Preview
-              // This ensures we fetch the latest published entry
-              const storedContentType = sessionStorage.getItem('contentstack_content_type')
-              if (storedContentType === 'get_started') {
-                sessionStorage.removeItem('contentstack_entry_uid')
-                sessionStorage.removeItem('contentstack_last_version')
-                sessionStorage.removeItem('contentstack_last_updated')
-              }
-            }
-          } catch (e) {}
-        }
+        // Clear stored UIDs to ensure we fetch published entry (not draft)
+        try {
+          const storedContentType = sessionStorage.getItem('contentstack_content_type')
+          if (storedContentType !== 'get_started') {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+          }
+        } catch (e) {}
         
         const fetchedEntry = await fetchGetStarted()
         const mapped = mapGetStarted(fetchedEntry)
@@ -190,21 +181,11 @@ function GetStartedPage() {
         const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
         setEntry(entryWithTags)
         
-        if (fetchedEntry?._version) {
-          try {
-            sessionStorage.setItem('contentstack_last_version', String(fetchedEntry._version))
-          } catch (e) {}
-        }
-        if (fetchedEntry?.updated_at) {
-          try {
-            sessionStorage.setItem('contentstack_last_updated', String(fetchedEntry.updated_at))
-          } catch (e) {}
-        }
         if (fetchedEntry?.uid) {
           setEntryUid(fetchedEntry.uid)
           try {
-            sessionStorage.setItem('contentstack_content_type', 'get_started')
             sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+            sessionStorage.setItem('contentstack_content_type', 'get_started')
           } catch (e) {}
         }
         
@@ -237,6 +218,14 @@ function GetStartedPage() {
         }
       } catch (e) {
         console.warn('[LP LOAD] fetchGetStarted failed:', e)
+        // If 422 error, clear invalid UID
+        if (e?.status === 422 || e?.error_code === 141 || 
+            (e?.error_message && e.error_message.includes("doesn't exist"))) {
+          try {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+          } catch {}
+        }
       } finally {
         setLoading(false)
       }
@@ -260,17 +249,14 @@ function GetStartedPage() {
       setLoading(true)
       async function reload() {
         try {
-          // Clear stale data and force fresh fetch
-          const inIframe = typeof window !== 'undefined' && window.self !== window.top
-          if (!inIframe) {
-            // Not in Live Preview - clear stored UID to get fresh published entry
+          // Clear stored UIDs to ensure we fetch published entry (not draft)
+          try {
             const storedContentType = sessionStorage.getItem('contentstack_content_type')
-            if (storedContentType === 'get_started') {
+            if (storedContentType !== 'get_started') {
               sessionStorage.removeItem('contentstack_entry_uid')
-              sessionStorage.removeItem('contentstack_last_version')
-              sessionStorage.removeItem('contentstack_last_updated')
+              sessionStorage.removeItem('contentstack_content_type')
             }
-          }
+          } catch (e) {}
           
           const fetchedEntry = await fetchGetStarted()
           const mapped = mapGetStarted(fetchedEntry)
@@ -279,25 +265,23 @@ function GetStartedPage() {
           const entryWithTags = fetchedEntry ? JSON.parse(JSON.stringify(fetchedEntry)) : null
           setEntry(entryWithTags)
           
-          if (fetchedEntry?._version) {
-            try {
-              sessionStorage.setItem('contentstack_last_version', String(fetchedEntry._version))
-            } catch (e) {}
-          }
-          if (fetchedEntry?.updated_at) {
-            try {
-              sessionStorage.setItem('contentstack_last_updated', String(fetchedEntry.updated_at))
-            } catch (e) {}
-          }
           if (fetchedEntry?.uid) {
             setEntryUid(fetchedEntry.uid)
             try {
-              sessionStorage.setItem('contentstack_content_type', 'get_started')
               sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+              sessionStorage.setItem('contentstack_content_type', 'get_started')
             } catch (e) {}
           }
         } catch (e) {
           console.warn('[GET_STARTED] Reload failed:', e)
+          // If 422 error, clear invalid UID
+          if (e?.status === 422 || e?.error_code === 141 || 
+              (e?.error_message && e.error_message.includes("doesn't exist"))) {
+            try {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_content_type')
+            } catch {}
+          }
         } finally {
           setLoading(false)
         }

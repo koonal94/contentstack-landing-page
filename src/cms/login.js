@@ -2,56 +2,71 @@ import { getStack } from './contentstackClient'
 import Contentstack from 'contentstack'
 
 // Fetches the first published login entry
-export async function fetchLogin(forcedEntryUid = null) {
+// @param {string} forcedEntryUid - Optional entry UID to fetch (overrides detection)
+// @param {boolean} ignoreStoredUid - If true, skip stored UIDs and fetch published entries
+export async function fetchLogin(forcedEntryUid = null, ignoreStoredUid = false) {
   const stack = getStack()
   if (!stack) return null
   
-  let contentType = 'login'
-  const locale = 'en-us'
-  
-  let entryUid = forcedEntryUid || import.meta.env.VITE_CONTENTSTACK_LOGIN_ENTRY_UID || ''
-  
-  try {
-    const params = new URLSearchParams(window.location.search)
-    const ctFromUrl = params.get('content_type_uid') || params.get('contentTypeUid')
-    const entryFromUrl = params.get('entry_uid') || params.get('entryUid')
-    
-    // CRITICAL: Only use content type from URL if it matches 'login'
-    if (ctFromUrl && ctFromUrl === 'login') {
-      contentType = ctFromUrl
-    }
-    
-    if (entryFromUrl) {
-      entryUid = entryFromUrl
-      console.log('[LOGIN] Found entry UID in URL params:', entryUid)
-    }
-    
-    const hashMatch = window.location.hash.match(/entry[\/=]([^\/&\?]+)/i)
-    if (hashMatch && !entryUid) {
-      entryUid = hashMatch[1]
-    }
-    
-    // CRITICAL: Only use stored entry UID if content type matches
-    if (!entryUid && typeof window !== 'undefined') {
-      try {
-        const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
-                                  localStorage.getItem('contentstack_content_type')
-        
-        if (storedContentType === 'login') {
-          const stored = localStorage.getItem('contentstack_entry_uid') || 
-                        sessionStorage.getItem('contentstack_entry_uid')
-          if (stored) {
-            entryUid = stored
-          }
-        }
-      } catch {}
-    }
-  } catch {}
-  
+  // Check if in iframe (Live Preview indicator) FIRST
   let inIframe = false
   try {
     inIframe = window.self !== window.top
   } catch {}
+  
+  let contentType = 'login'
+  const locale = 'en-us'
+  
+  // CRITICAL: When NOT in live preview, ignore environment variable UIDs to fetch published entries
+  // Only use forcedEntryUid (for live preview callbacks) or UIDs from URL (for live preview)
+  let entryUid = forcedEntryUid || ''
+  
+  // During live preview, Contentstack app adds query params or passes via postMessage
+  // Only use URL params if in live preview OR if forcedEntryUid was provided
+  // Skip URL params/hash if ignoreStoredUid is true (for fetching published entries)
+  if (!ignoreStoredUid) {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const ctFromUrl = params.get('content_type_uid') || params.get('contentTypeUid')
+      const entryFromUrl = params.get('entry_uid') || params.get('entryUid')
+      
+      // CRITICAL: Only use content type from URL if it matches 'login'
+      if (ctFromUrl && ctFromUrl === 'login') {
+        contentType = ctFromUrl
+      }
+      
+      // Only use URL params if in live preview OR if forcedEntryUid was provided
+      if (entryFromUrl && (inIframe || forcedEntryUid)) {
+        entryUid = entryFromUrl
+        console.log('[LOGIN] Found entry UID in URL params:', entryUid)
+      }
+      
+      // Also check hash (Contentstack sometimes uses hash-based routing)
+      const hashMatch = window.location.hash.match(/entry[\/=]([^\/&\?]+)/i)
+      if (hashMatch && !entryUid && (inIframe || forcedEntryUid)) {
+        entryUid = hashMatch[1]
+        console.log('[LOGIN] Found entry UID in hash:', entryUid)
+      }
+    } catch {}
+  }
+  
+  // Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // When NOT in live preview, skip stored UIDs to fetch published entries
+  // Also skip if ignoreStoredUid is true
+  if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
+    try {
+      const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
+                                localStorage.getItem('contentstack_content_type')
+      
+      if (storedContentType === 'login') {
+        const stored = localStorage.getItem('contentstack_entry_uid') || 
+                      sessionStorage.getItem('contentstack_entry_uid')
+        if (stored) {
+          entryUid = stored
+        }
+      }
+    } catch {}
+  }
   
   async function run(q) {
     const result = await q.find()
@@ -68,7 +83,8 @@ export async function fetchLogin(forcedEntryUid = null) {
   let entry = null
   
   // If an explicit entry UID is provided, load that first (most specific)
-  if (entryUid) {
+  // BUT: If ignoreStoredUid is true, skip UID-based fetching and query published entries directly
+  if (entryUid && !ignoreStoredUid) {
     try {
       const entryQuery = stack
         .ContentType(contentType)
@@ -224,21 +240,61 @@ export async function fetchLogin(forcedEntryUid = null) {
     }
   }
   
-  // Fallback: try latest entry (works for published content)
+  // Fallback: query for published entries (only if not in Live Preview)
+  // CRITICAL: When NOT in Live Preview, always query for published entries
   if (!entry && !inIframe) {
     try {
-      entry = await run(base.only(['*']).descending('updated_at').limit(1))
+      // First try: query for any published entry (most recent first)
+      // This is the most reliable query that works for all content types
+      const publishedQuery = base.descending('updated_at').limit(1)
+      // Add cache-busting for published entries to ensure we get latest
+      try {
+        if (typeof publishedQuery.addParam === 'function') {
+          const timestamp = Date.now()
+          publishedQuery.addParam('_cb', timestamp)
+          publishedQuery.addParam('_t', timestamp)
+          publishedQuery.addParam('_fresh', timestamp)
+        }
+      } catch {}
+      
+      entry = await run(publishedQuery)
+      
+      // If still no entry, try with .only(['*']) as fallback
+      if (!entry) {
+        try {
+          const onlyQuery = base.only(['*']).descending('updated_at').limit(1)
+          if (typeof onlyQuery.addParam === 'function') {
+            const timestamp = Date.now()
+            onlyQuery.addParam('_cb', timestamp)
+            onlyQuery.addParam('_t', timestamp)
+          }
+          entry = await run(onlyQuery)
+        } catch (e) {
+          // Silent fallback
+        }
+      }
+      
+      // Last resort: try with is_default = true (if field exists)
+      if (!entry) {
+        try {
+          const defaultQuery = base.where('is_default', true).limit(1)
+          if (typeof defaultQuery.addParam === 'function') {
+            const timestamp = Date.now()
+            defaultQuery.addParam('_cb', timestamp)
+            defaultQuery.addParam('_t', timestamp)
+          }
+          entry = await run(defaultQuery)
+        } catch (e) {
+          // Silent fallback - is_default field might not exist
+        }
+      }
+      
+      if (!entry) {
+        // Only log warning if no entry found after all attempts
+        console.warn('[LOGIN] No published entries found. Check environment variable matches published environment.')
+      }
     } catch (e) {
-      // Silent fallback
-    }
-  }
-  
-  // Final fallback: latest updated entry (only if not in Live Preview)
-  if (!entry && !inIframe) {
-    try {
-      entry = await run(base.limit(1))
-    } catch (e) {
-      // Silent fallback
+      console.error('[LOGIN] Query for published entries failed:', e)
     }
   }
   
@@ -354,11 +410,15 @@ export async function fetchLogin(forcedEntryUid = null) {
     }
   }
   
-  // Store content type and entry UID when entry is found
+  // Store content type and entry UID when entry is found (only if content type matches)
   if (entry?.uid && typeof window !== 'undefined') {
     try {
-      sessionStorage.setItem('contentstack_content_type', contentType)
-      sessionStorage.setItem('contentstack_entry_uid', entry.uid)
+      // Only store if we're in Live Preview or if content type matches
+      const storedContentType = sessionStorage.getItem('contentstack_content_type')
+      if (inIframe || storedContentType === contentType || !storedContentType) {
+        sessionStorage.setItem('contentstack_content_type', contentType)
+        sessionStorage.setItem('contentstack_entry_uid', entry.uid)
+      }
     } catch {}
   }
   

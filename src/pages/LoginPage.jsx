@@ -156,23 +156,16 @@ function LoginPage() {
       }, 600)
     }
     
-    async function load(forceFresh = false) {
+    async function load() {
       try {
-        // When navigating directly (not in Live Preview), clear stale sessionStorage
-        // to force fetching fresh published entry
-        if (forceFresh && typeof window !== 'undefined') {
-          try {
-            const inIframe = window.self !== window.top
-            if (!inIframe) {
-              // Clear stored entry UID for login page when not in Live Preview
-              // This ensures we fetch the latest published entry
-              const storedContentType = sessionStorage.getItem('contentstack_content_type')
-              if (storedContentType === 'login') {
-                sessionStorage.removeItem('contentstack_entry_uid')
-              }
-            }
-          } catch (e) {}
-        }
+        // Clear stored UIDs to ensure we fetch published entry (not draft)
+        try {
+          const storedContentType = sessionStorage.getItem('contentstack_content_type')
+          if (storedContentType !== 'login') {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+          }
+        } catch (e) {}
         
         const fetchedEntry = await fetchLogin()
         const mapped = mapLogin(fetchedEntry)
@@ -184,8 +177,8 @@ function LoginPage() {
         if (fetchedEntry?.uid) {
           setEntryUid(fetchedEntry.uid)
           try {
-            sessionStorage.setItem('contentstack_content_type', 'login')
             sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+            sessionStorage.setItem('contentstack_content_type', 'login')
           } catch (e) {}
         }
         
@@ -218,6 +211,14 @@ function LoginPage() {
         }
       } catch (e) {
         console.warn('[LP LOAD] fetchLogin failed:', e)
+        // If 422 error, clear invalid UID
+        if (e?.status === 422 || e?.error_code === 141 || 
+            (e?.error_message && e.error_message.includes("doesn't exist"))) {
+          try {
+            sessionStorage.removeItem('contentstack_entry_uid')
+            sessionStorage.removeItem('contentstack_content_type')
+          } catch {}
+        }
       } finally {
         setLoading(false)
       }
@@ -241,15 +242,14 @@ function LoginPage() {
       setLoading(true)
       async function reload() {
         try {
-          // Clear stale data and force fresh fetch
-          const inIframe = typeof window !== 'undefined' && window.self !== window.top
-          if (!inIframe) {
-            // Not in Live Preview - clear stored UID to get fresh published entry
+          // Clear stored UIDs to ensure we fetch published entry (not draft)
+          try {
             const storedContentType = sessionStorage.getItem('contentstack_content_type')
-            if (storedContentType === 'login') {
+            if (storedContentType !== 'login') {
               sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_content_type')
             }
-          }
+          } catch (e) {}
           
           const fetchedEntry = await fetchLogin()
           const mapped = mapLogin(fetchedEntry)
@@ -261,12 +261,20 @@ function LoginPage() {
           if (fetchedEntry?.uid) {
             setEntryUid(fetchedEntry.uid)
             try {
-              sessionStorage.setItem('contentstack_content_type', 'login')
               sessionStorage.setItem('contentstack_entry_uid', fetchedEntry.uid)
+              sessionStorage.setItem('contentstack_content_type', 'login')
             } catch (e) {}
           }
         } catch (e) {
           console.warn('[LOGIN] Reload failed:', e)
+          // If 422 error, clear invalid UID
+          if (e?.status === 422 || e?.error_code === 141 || 
+              (e?.error_message && e.error_message.includes("doesn't exist"))) {
+            try {
+              sessionStorage.removeItem('contentstack_entry_uid')
+              sessionStorage.removeItem('contentstack_content_type')
+            } catch {}
+          }
         } finally {
           setLoading(false)
         }
