@@ -4,83 +4,85 @@ import { getEditTag } from '../utils/getEditTag'
 
 const CTA = ({ data, entry }) => {
   return (
-    <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 relative overflow-hidden">
-      {/* Contentstack-style Mesh Gradient Background - Matching Hero */}
+    <section className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 relative overflow-hidden">
+      {/* Contentstack-style Mesh Gradient Background with Zoom Animations - Matching Hero */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Mesh Gradient Layers - Flowing organic shapes */}
+        {/* Mesh Gradient Layers - Flowing organic shapes with zoom animations */}
         <div className="absolute inset-0">
-          {/* Layer 1 - Top right mesh */}
+          {/* Layer 1 - Top right mesh - Zoom in/out */}
           <motion.div
-            className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-primary-500/30 via-primary-400/20 to-transparent rounded-full filter blur-[140px]"
+            className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-primary-500/40 via-purple-400/30 to-transparent rounded-full filter blur-[140px]"
             animate={{
               x: [0, 100, 0],
               y: [0, -50, 0],
-              scale: [1, 1.2, 1],
+              scale: [1, 1.4, 1],
             }}
             transition={{
-              duration: 20,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
             }}
           />
           
-          {/* Layer 2 - Bottom left mesh */}
+          {/* Layer 2 - Bottom left mesh - Zoom in/out */}
           <motion.div
-            className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-gradient-to-tr from-blue-500/25 via-primary-500/15 to-transparent rounded-full filter blur-[130px]"
+            className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-gradient-to-tr from-purple-500/35 via-primary-500/25 to-transparent rounded-full filter blur-[130px]"
             animate={{
               x: [0, -80, 0],
               y: [0, 60, 0],
-              scale: [1, 1.15, 1],
+              scale: [1.3, 1, 1.3],
             }}
             transition={{
-              duration: 18,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 2,
+              delay: 0.5,
             }}
           />
           
-          {/* Layer 3 - Center mesh */}
+          {/* Layer 3 - Center mesh - Pulsing zoom */}
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary-400/20 via-primary-500/15 to-transparent rounded-full filter blur-[120px]"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary-400/30 via-purple-500/25 to-transparent rounded-full filter blur-[120px]"
             animate={{
-              scale: [1, 1.3, 1],
+              scale: [1, 1.6, 1],
               rotate: [0, 180, 360],
             }}
             transition={{
-              duration: 25,
+              duration: 4,
               repeat: Infinity,
-              ease: "linear",
+              ease: "easeInOut",
             }}
           />
           
-          {/* Layer 4 - Top left accent */}
+          {/* Layer 4 - Top left accent - Zoom animation */}
           <motion.div
-            className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-primary-600/20 via-blue-500/15 to-transparent rounded-full filter blur-[110px]"
+            className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-primary-600/30 via-purple-500/25 to-transparent rounded-full filter blur-[110px]"
             animate={{
               x: [0, 60, 0],
               y: [0, -40, 0],
+              scale: [1, 1.3, 1],
             }}
             transition={{
-              duration: 22,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 1,
+              delay: 0.3,
             }}
           />
           
-          {/* Layer 5 - Bottom right accent */}
+          {/* Layer 5 - Bottom right accent - Zoom animation */}
           <motion.div
-            className="absolute bottom-1/4 right-1/4 w-[550px] h-[550px] bg-gradient-to-tl from-blue-400/18 via-primary-500/12 to-transparent rounded-full filter blur-[115px]"
+            className="absolute bottom-1/4 right-1/4 w-[550px] h-[550px] bg-gradient-to-tl from-purple-400/28 via-primary-500/22 to-transparent rounded-full filter blur-[115px]"
             animate={{
               x: [0, -70, 0],
               y: [0, 50, 0],
+              scale: [1.2, 1, 1.2],
             }}
             transition={{
-              duration: 24,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 3,
+              delay: 0.7,
             }}
           />
         </div>
@@ -90,8 +92,8 @@ const CTA = ({ data, entry }) => {
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(124, 77, 255, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(124, 77, 255, 0.1) 1px, transparent 1px)
+              linear-gradient(rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.1) 1px, transparent 1px)
             `,
             backgroundSize: '50px 50px',
           }}
@@ -104,9 +106,9 @@ const CTA = ({ data, entry }) => {
         >
           <defs>
             <linearGradient id="ctaGridGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(124, 77, 255, 0.3)" stopOpacity="0" />
-              <stop offset="50%" stopColor="rgba(124, 77, 255, 0.5)" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="rgba(124, 77, 255, 0.3)" stopOpacity="0" />
+              <stop offset="0%" stopColor="rgba(147, 51, 234, 0.3)" stopOpacity="0" />
+              <stop offset="50%" stopColor="rgba(147, 51, 234, 0.5)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="rgba(147, 51, 234, 0.3)" stopOpacity="0" />
             </linearGradient>
           </defs>
           <motion.line
@@ -144,7 +146,7 @@ const CTA = ({ data, entry }) => {
           />
         </motion.svg>
         
-        {/* Floating Light Orbs - Subtle accent lights */}
+        {/* Floating Light Orbs - Zoom in/out animations */}
         {[
           { x: '15%', y: '20%', size: 120 },
           { x: '85%', y: '30%', size: 100 },
@@ -154,26 +156,26 @@ const CTA = ({ data, entry }) => {
           { x: '10%', y: '50%', size: 130 },
         ].map((orb, i) => (
           <motion.div
-            key={`orb-${i}`}
+            key={`cta-orb-${i}`}
             className="absolute rounded-full filter blur-[80px]"
             style={{
               left: orb.x,
               top: orb.y,
               width: `${orb.size}px`,
               height: `${orb.size}px`,
-              background: `radial-gradient(circle, rgba(124, 77, 255, ${0.15 + i * 0.05}) 0%, transparent 70%)`,
+              background: `radial-gradient(circle, rgba(147, 51, 234, ${0.2 + i * 0.05}) 0%, transparent 70%)`,
             }}
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.2, 0.4, 0.2],
+              scale: i % 2 === 0 ? [1, 1.5, 1] : [1.3, 1, 1.3],
+              opacity: [0.3, 0.6, 0.3],
               x: [0, i % 2 === 0 ? 30 : -30, 0],
               y: [0, i % 2 === 0 ? -20 : 20, 0],
             }}
             transition={{
-              duration: 8 + i * 0.5,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 0.5,
+              delay: i * 0.2,
             }}
           />
         ))}
@@ -219,7 +221,7 @@ const CTA = ({ data, entry }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-white text-primary-600 rounded-lg font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-200 inline-flex items-center group"
+              className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center group"
               {...getEditTag(entry, 'cta.primary_text')}
             >
               {data?.primaryText || 'Start Free Trial'}

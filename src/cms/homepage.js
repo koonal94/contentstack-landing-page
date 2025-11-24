@@ -755,7 +755,7 @@ export function mapHomepage(entry) {
       return featuresData.map((f) => ({
         title: f?.title || f?.name || '',
         description: f?.description || f?.desc || '',
-        color: f?.color || 'from-blue-400 to-cyan-500',
+        color: f?.color || 'from-purple-400 to-purple-500',
         icon: f?.icon || 'Zap',
       }))
     })(),

@@ -44,7 +44,11 @@ const Navigation = ({ scrollY, data, entry }) => {
         scrollToElement(hash)
       }, 300)
     } else {
-      // Already on homepage, try to scroll immediately
+      // Already on homepage, update URL hash and scroll
+      // Update the URL hash to reflect the current section
+      window.history.pushState(null, '', `#${hash}`)
+      
+      // Try to scroll immediately
       // If element not found, retry with increasing delays
       if (!scrollToElement(hash)) {
         // If still not found after retries, try once more after a longer delay
@@ -109,14 +113,17 @@ const Navigation = ({ scrollY, data, entry }) => {
             to="/" 
             className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={(e) => {
-              // If already on homepage, scroll to top instead of navigating
+              // If already on homepage, scroll to top and clear hash
               if (location.pathname === '/') {
                 e.preventDefault()
+                // Clear the URL hash
+                window.history.pushState(null, '', '/')
+                // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' })
               }
             }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">C</span>
             </div>
             <span 

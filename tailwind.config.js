@@ -8,16 +8,16 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#e6f2ff',
-          100: '#cce5ff',
-          200: '#99cbff',
-          300: '#66b1ff',
-          400: '#3397ff',
-          500: '#007dff',  // Contentstack primary blue
-          600: '#0066cc',
-          700: '#0052a3',
-          800: '#003d7a',
-          900: '#002952',
+          50: '#f3e8ff',
+          100: '#e9d5ff',
+          200: '#d8b4fe',
+          300: '#c084fc',
+          400: '#a855f7',
+          500: '#9333ea',  // Contentstack primary purple
+          600: '#7e22ce',
+          700: '#6b21a8',
+          800: '#581c87',
+          900: '#4c1d95',
         },
       },
       animation: {
@@ -52,8 +52,8 @@ export default {
           '50%': { transform: 'translateY(-20px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(0, 125, 255, 0.5), 0 0 10px rgba(0, 125, 255, 0.3)' },
-          '100%': { boxShadow: '0 0 20px rgba(0, 125, 255, 0.8), 0 0 30px rgba(0, 125, 255, 0.5)' },
+          '0%': { boxShadow: '0 0 5px rgba(147, 51, 234, 0.5), 0 0 10px rgba(147, 51, 234, 0.3)' },
+          '100%': { boxShadow: '0 0 20px rgba(147, 51, 234, 0.8), 0 0 30px rgba(147, 51, 234, 0.5)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-1000px 0' },

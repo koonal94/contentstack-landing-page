@@ -43,7 +43,7 @@ const Benefits = ({ data, entry }) => {
   ]
 
   return (
-    <section id="benefits" className="py-20 bg-gradient-to-br from-gray-800 to-gray-900">
+    <section id="benefits" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -78,7 +78,7 @@ const Benefits = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300"
+              className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 hover:bg-gray-900/60 transition-all duration-300"
               {...getEditTag(entry, 'benefits.cards')}
             >
               <h3 className="text-2xl font-bold text-white mb-4">
@@ -105,7 +105,7 @@ const Benefits = ({ data, entry }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="bg-gray-800 border border-gray-700 rounded-2xl p-8 md:p-12 shadow-xl"
+          className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 md:p-12"
           {...getEditTag(entry, 'benefits.stats')}
         >
           <div className="grid md:grid-cols-4 gap-8 text-center">

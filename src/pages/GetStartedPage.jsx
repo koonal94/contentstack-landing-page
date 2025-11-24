@@ -438,10 +438,56 @@ function GetStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800">
-      <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} />
-      
-      <section className="pt-32 pb-20 md:pt-40 md:pb-32">
+    <div className="min-h-screen bg-gray-950">
+      {/* Main Content Section with Background Animations */}
+      <div className="relative bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 overflow-hidden">
+        {/* Background animations matching hero section */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0">
+            <motion.div
+              className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-primary-500/40 via-purple-400/30 to-transparent rounded-full filter blur-[140px]"
+              animate={{
+                x: [0, 100, 0],
+                y: [0, -50, 0],
+                scale: [1, 1.4, 1],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-gradient-to-tr from-purple-500/35 via-primary-500/25 to-transparent rounded-full filter blur-[130px]"
+              animate={{
+                x: [0, -80, 0],
+                y: [0, 60, 0],
+                scale: [1.3, 1, 1.3],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5,
+              }}
+            />
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary-400/30 via-purple-500/25 to-transparent rounded-full filter blur-[120px]"
+              animate={{
+                scale: [1, 1.6, 1],
+                rotate: [0, 180, 360],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
+        </div>
+        <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} />
+        
+        <section className="pt-32 pb-20 md:pt-40 md:pb-32 relative z-10">
         <div className="container-custom">
           <div className="max-w-6xl mx-auto">
             {/* Hero Section */}
@@ -495,7 +541,7 @@ function GetStartedPage() {
                         transition={{ delay: 0.3 + idx * 0.1 }}
                         className="flex items-start space-x-4"
                       >
-                        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                           {step.number || idx + 1}
                         </div>
                         <div className="flex-1 pt-1">
@@ -660,7 +706,9 @@ function GetStartedPage() {
           </div>
         </div>
       </section>
+      </div>
 
+      {/* Footer - Separate section like homepage */}
       <Footer data={homepageData?.footer || cmsData?.footer || {}} entry={homepageEntry || entry} />
     </div>
   )

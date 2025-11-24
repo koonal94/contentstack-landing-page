@@ -21,7 +21,7 @@ const Features = ({ data, entry }) => {
       icon: <Globe className="w-8 h-8" />,
       title: 'Multi-Channel',
       description: 'Deliver content to websites, mobile apps, IoT devices, and any digital platform.',
-      color: 'from-blue-400 to-cyan-500',
+      color: 'from-purple-400 to-purple-500',
     },
     {
       icon: <Code className="w-8 h-8" />,
@@ -44,7 +44,7 @@ const Features = ({ data, entry }) => {
   ]
 
   return (
-    <section id="features" className="py-20 bg-gray-900">
+    <section id="features" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -71,11 +71,11 @@ const Features = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="feature-card group"
+              className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-6 hover:bg-gray-900/60 transition-all duration-300 transform hover:-translate-y-1 group"
               {...getEditTag(entry, 'features.items')}
             >
               <div
-                className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.color || 'from-blue-400 to-cyan-500'} flex items-center justify-center text-white mb-6 transform group-hover:scale-110 transition-transform duration-300`}
+                className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.color || 'from-purple-400 to-purple-500'} flex items-center justify-center text-white mb-6 transform group-hover:scale-110 transition-transform duration-300`}
               >
                 {feature.icon ? (
                   // icon provided as React node in fallback

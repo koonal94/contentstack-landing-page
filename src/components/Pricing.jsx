@@ -55,11 +55,11 @@ const Pricing = ({ data, entry }) => {
     : defaultPlans
 
   return (
-    <section id="pricing" className="py-20 md:py-32 bg-gray-900 relative overflow-hidden">
+    <section id="pricing" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       </div>
 
       <div className="container-custom relative z-10">
@@ -100,7 +100,7 @@ const Pricing = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className={`relative bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-2xl ${
+              className={`relative bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 transition-all duration-300 hover:bg-gray-900/60 ${
                 plan.popular
                   ? 'border-2 border-primary-500 scale-105 md:scale-110'
                   : ''
@@ -109,7 +109,7 @@ const Pricing = ({ data, entry }) => {
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-primary-500 to-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-gradient-to-r from-primary-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                     Most Popular
                   </span>
                 </div>
@@ -139,7 +139,7 @@ const Pricing = ({ data, entry }) => {
                 className={`w-full py-3 rounded-lg font-semibold transition-colors ${
                   plan.popular
                     ? 'btn-primary'
-                    : 'bg-gray-700 text-white hover:bg-gray-600'
+                    : 'bg-primary-600/80 text-white hover:bg-primary-700/80'
                 }`}
               >
                 {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
