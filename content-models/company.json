@@ -1,0 +1,221 @@
+{
+  "title": "Company Page",
+  "uid": "company",
+  "schema": [
+    {
+      "display_name": "Entry Title",
+      "uid": "entry_title",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": true,
+      "field_metadata": {},
+      "unique": false
+    },
+    {
+      "display_name": "URL",
+      "uid": "url",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {
+        "instruction": "Custom URL for this entry (e.g., /company or /company/about-us). Leave empty to use default /company route."
+      },
+      "unique": false
+    },
+    {
+      "display_name": "Hero Section",
+      "uid": "hero",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subheading",
+          "uid": "subheading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Stats",
+      "uid": "stats",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Number",
+          "uid": "number",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Label",
+          "uid": "label",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Values Section",
+      "uid": "values_section",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Values",
+      "uid": "values",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Icon",
+          "uid": "icon",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {
+            "instruction": "Icon name from lucide-react (e.g., Target, Lightbulb, Heart, Award)"
+          }
+        },
+        {
+          "display_name": "Color",
+          "uid": "color",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {
+            "instruction": "Gradient color classes (e.g., from-blue-500 to-blue-600)"
+          }
+        }
+      ]
+    },
+    {
+      "display_name": "CTA Section",
+      "uid": "cta_section",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Button Text",
+          "uid": "button_text",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Button Link",
+          "uid": "button_link",
+          "data_type": "link",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Footer",
+      "uid": "footer",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Link Groups",
+          "uid": "link_groups",
+          "data_type": "group",
+          "multiple": true,
+          "mandatory": false,
+          "field_metadata": {},
+          "schema": [
+            {
+              "display_name": "Title",
+              "uid": "title",
+              "data_type": "text",
+              "multiple": false,
+              "mandatory": false,
+              "field_metadata": {}
+            },
+            {
+              "display_name": "Links",
+              "uid": "links",
+              "data_type": "link",
+              "multiple": true,
+              "mandatory": false,
+              "field_metadata": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

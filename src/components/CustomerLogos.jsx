@@ -34,7 +34,7 @@ const CustomerLogos = ({ data, entry }) => {
             <div
               className="flex items-center space-x-12 md:space-x-16 customer-logos-scroll"
               style={{
-                '--scroll-duration': `${customers.length * 0.9375}s`,
+                '--scroll-duration': `${customers.length * 1.675}s`, // 25% slower than previous (1.34 * 1.25 = 1.675)
                 width: 'max-content',
               }}
               {...getEditTag(entry, 'customer_logos.companies')}

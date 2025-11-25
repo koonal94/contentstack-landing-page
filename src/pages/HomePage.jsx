@@ -111,12 +111,30 @@ function HomePage() {
             return
           }
           
-          const freshEntry = await fetchHomepage(stored)
-          if (!freshEntry) {
+          // Fetch the entry with the stored UID to get latest changes
+          // Use shorter timeout for RTE fields to update faster
+          const freshEntry = await fetchHomepage(stored, false)
+          if (freshEntry) {
+            // Normalize entry structure
+            if (!freshEntry.fields && (freshEntry.hero || freshEntry.navigation || freshEntry.cta || freshEntry.benefits || freshEntry.pricing)) {
+              freshEntry.fields = {}
+              Object.keys(freshEntry).forEach(key => {
+                if (!key.startsWith('_') && key !== 'uid' && key !== '$' && key !== 'fields' && 
+                    typeof freshEntry[key] === 'object' && freshEntry[key] !== null) {
+                  freshEntry.fields[key] = JSON.parse(JSON.stringify(freshEntry[key]))
+                }
+              })
+            }
+            
             const entryClone = JSON.parse(JSON.stringify(freshEntry))
             const mapped = mapHomepage(freshEntry)
             
+            // Force update for RTE fields - check if heading changed
             setCmsData(prev => {
+              // For RTE fields, always update if heading exists (even if stringified same, HTML might have changed)
+              if (mapped?.hero?.heading && prev?.hero?.heading !== mapped.hero.heading) {
+                return mapped
+              }
               const newStr = JSON.stringify(mapped)
               const prevStr = JSON.stringify(prev)
               return newStr !== prevStr ? mapped : prev
@@ -127,13 +145,19 @@ function HomePage() {
               const prevStr = JSON.stringify(prev)
               return newStr !== prevStr ? entryClone : prev
             })
+            
+            // Update stored UID if changed
+            if (freshEntry?.uid) {
+              setEntryUid(freshEntry.uid)
+              sessionStorage.setItem('contentstack_entry_uid', freshEntry.uid)
+            }
           }
         } catch (e) {
           console.warn('[LP] Live edit update failed:', e)
         } finally {
           callbackWorkingRef.current = false
         }
-      }, 400)
+      }, 200) // Reduced from 400ms to 200ms for faster RTE updates
     }
     
     let updateTimer = null
@@ -304,18 +328,34 @@ function HomePage() {
       
       // Set up onLivePreviewChange callback
       const unsubscribeFn = onLivePreviewChange(async (data) => {
-        if (!data || !data.entry_uid) return
+        if (!data) return
         
+        // Get entry UID from data or sessionStorage
+        const entryUid = data.entry_uid || data.entryUid || sessionStorage.getItem('contentstack_entry_uid')
+        if (!entryUid) {
+          console.debug('[LP] onLivePreviewChange: No entry UID found')
+          return
+        }
+        
+        console.debug('[LP] onLivePreviewChange: Updating entry', entryUid, data)
+        
+        // Update stored UID if different
         const stored = sessionStorage.getItem('contentstack_entry_uid')
-        if (!stored || stored !== data.entry_uid) {
-          sessionStorage.setItem('contentstack_entry_uid', data.entry_uid)
-          setEntryUid(data.entry_uid)
+        if (!stored || stored !== entryUid) {
+          sessionStorage.setItem('contentstack_entry_uid', entryUid)
+          setEntryUid(entryUid)
         }
         
         try {
-          const entry = await fetchHomepage(data.entry_uid)
-          if (!entry) return
+          // Fetch entry with the UID to get latest changes (including unpublished edits)
+          // Pass false for ignoreStoredUid to use the entryUid parameter
+          const entry = await fetchHomepage(entryUid, false)
+          if (!entry) {
+            console.warn('[LP] onLivePreviewChange: Entry not found for UID', entryUid)
+            return
+          }
           
+          // Normalize entry structure
           if (!entry.fields && (entry.hero || entry.navigation || entry.cta || entry.benefits || entry.pricing)) {
             entry.fields = {}
             Object.keys(entry).forEach(key => {
@@ -329,6 +369,7 @@ function HomePage() {
           const entryClone = JSON.parse(JSON.stringify(entry))
           const mapped = mapHomepage(entry)
           
+          // Update state only if data actually changed
           setCmsData(prev => {
             const newStr = JSON.stringify(mapped)
             const prevStr = JSON.stringify(prev)
@@ -341,12 +382,20 @@ function HomePage() {
             return newStr !== prevStr ? entryClone : prev
           })
           
+          // Update stored UID and version info
           if (entry?.uid) {
             setEntryUid(entry.uid)
             sessionStorage.setItem('contentstack_entry_uid', entry.uid)
+            sessionStorage.setItem('contentstack_content_type', 'homepage')
+          }
+          if (entry?._version) {
+            sessionStorage.setItem('contentstack_homepage_last_version', String(entry._version))
+          }
+          if (entry?.updated_at) {
+            sessionStorage.setItem('contentstack_homepage_last_updated', String(entry.updated_at))
           }
         } catch (e) {
-          // Silent error handling
+          console.warn('[LP] onLivePreviewChange update failed:', e)
         }
       })
       
@@ -482,7 +531,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Navigation scrollY={scrollY} data={cmsData?.navigation} entry={entry} />
+      <Navigation scrollY={scrollY} data={cmsData?.navigation} entry={entry} homepageUrl={cmsData?.homepageUrl} />
       <Hero data={cmsData?.hero} loading={loading} entry={entry} />
       <CustomerLogos data={cmsData?.customerLogos} entry={entry} />
       <Features data={cmsData?.features} entry={entry} />

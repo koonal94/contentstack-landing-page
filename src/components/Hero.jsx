@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Play, Code, Globe, Shield, BarChart3, Users, Zap, ChevronLeft, ChevronRight, Pause } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Play, Code, Globe, Shield, BarChart3, Users, Zap, ChevronLeft, ChevronRight, Pause, X } from 'lucide-react'
 import { getEditTag } from '../utils/getEditTag'
+import { stripHtml } from '../utils/stripHtml'
 
 const Hero = ({ data, loading, entry }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
   const slides = [
     {
@@ -399,7 +402,21 @@ const Hero = ({ data, loading, entry }) => {
               {...getEditTag(entry, 'hero.heading')}
             >
               {data?.heading ? (
-                data.heading
+                (() => {
+                  const headingValue = data.heading
+                  if (!headingValue || typeof headingValue !== 'string') {
+                    return headingValue
+                  }
+                  try {
+                    // Strip HTML tags using the utility function
+                    const stripped = stripHtml(headingValue)
+                    return stripped || headingValue.replace(/<[^>]*>/g, '').trim()
+                  } catch (e) {
+                    console.warn('[Hero] Error stripping HTML from heading:', e)
+                    // Fallback: use regex to strip tags
+                    return headingValue.replace(/<[^>]*>/g, '').trim()
+                  }
+                })()
               ) : (
                 <>
                   <span className="whitespace-nowrap">Build <motion.span 
@@ -430,30 +447,33 @@ const Hero = ({ data, loading, entry }) => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
+              <motion.div
                 whileHover={{ 
                   scale: 1.05,
-                  boxShadow: "0 0 20px rgba(147, 51, 234, 0.5)",
                 }}
                 whileTap={{ scale: 0.95 }}
-                className="btn-primary inline-flex items-center justify-center group relative overflow-hidden"
-                {...getEditTag(entry, 'hero.primary_cta')}
               >
-                <motion.span
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  animate={{
-                    x: ['-100%', '100%'],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 1,
-                    ease: "linear",
-                  }}
-                />
-                <span className="relative z-10">{data?.primaryCta || 'Start Free Trial'}</span>
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform relative z-10" size={20} />
-              </motion.button>
+                <Link
+                  to="/get-started"
+                  className="btn-primary inline-flex items-center justify-center group relative overflow-hidden"
+                  {...getEditTag(entry, 'hero.primary_cta')}
+                >
+                  <motion.span
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    animate={{
+                      x: ['-100%', '100%'],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                      ease: "linear",
+                    }}
+                  />
+                  <span className="relative z-10">{data?.primaryCta || 'Start Free Trial'}</span>
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform relative z-10" size={20} />
+                </Link>
+              </motion.div>
               
               <motion.button
                 whileHover={{ 
@@ -461,6 +481,7 @@ const Hero = ({ data, loading, entry }) => {
                   borderColor: "rgba(147, 51, 234, 0.8)",
                 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setShowVideoModal(true)}
                 className="btn-secondary inline-flex items-center justify-center"
                 {...getEditTag(entry, 'hero.secondary_cta')}
               >
@@ -493,16 +514,16 @@ const Hero = ({ data, loading, entry }) => {
             </div>
           </motion.div>
 
-          {/* Slideshow - Below Main Content, Centered */}
+          {/* Slideshow - Below Main Content, Side-by-Side Layout */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative w-full max-w-4xl"
+            className="relative w-full"
           >
-            <div className="relative p-8">
+            <div className="container-custom">
               {/* Slideshow Container */}
-              <div className="relative h-[400px]">
+              <div className="relative min-h-[400px]">
                 <AnimatePresence mode="wait">
                   {slides.map((slide, index) => {
                     if (index !== currentSlide) return null
@@ -513,22 +534,33 @@ const Hero = ({ data, loading, entry }) => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -50 }}
                         transition={{ duration: 0.5 }}
-                        className="absolute inset-0 flex flex-col"
+                        className="absolute inset-0"
                       >
-                        {/* Slide Header */}
-                        <div className="flex items-center space-x-3 mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white shadow-lg">
-                            {slide.icon}
+                        {/* Side-by-Side Layout: Text Left, Visual Right */}
+                        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+                          {/* Left Side - Text Content */}
+                          <div className="flex-shrink-0 w-full md:w-auto md:max-w-md">
+                            <div className="flex items-start space-x-4 mb-6 md:mb-0">
+                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white shadow-lg flex-shrink-0">
+                                {slide.icon}
+                              </div>
+                              <div>
+                                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                  {slide.title}
+                                </h3>
+                                <p className="text-base text-gray-700 dark:text-gray-400 leading-relaxed">
+                                  {slide.description}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{slide.title}</h3>
-                            <p className="text-sm text-gray-700 dark:text-gray-400">{slide.description}</p>
+                          
+                          {/* Right Side - Visual Content */}
+                          <div className="flex-1 w-full md:w-auto flex items-center justify-center min-h-[300px]">
+                            <div className="w-full max-w-lg">
+                              {slide.visual}
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Slide Visual */}
-                        <div className="flex-1 flex items-center justify-center">
-                          {slide.visual}
                         </div>
                       </motion.div>
                     )
@@ -537,7 +569,7 @@ const Hero = ({ data, loading, entry }) => {
               </div>
 
               {/* Slide Indicators and Navigation Controls - Same Row */}
-              <div className="flex items-center justify-between mt-6 relative">
+              <div className="flex items-center justify-between mt-8 relative">
                 {/* Slide Indicators - Centered */}
                 <div className="flex-1 flex items-center justify-center">
                   <div className="flex items-center space-x-2">
@@ -591,6 +623,47 @@ const Hero = ({ data, loading, entry }) => {
           </motion.div>
         </div>
       </div>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowVideoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-4xl mx-4 bg-gray-900 rounded-lg overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowVideoModal(false)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-gray-800/90 hover:bg-gray-700 flex items-center justify-center transition-colors"
+                aria-label="Close video"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+
+              {/* YouTube Video Embed */}
+              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full"
+                  src="https://www.youtube.com/embed/re10CG--E2I?si=0nN6Nbs1_zNEOim7&autoplay=1"
+                  title="Watch Demo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

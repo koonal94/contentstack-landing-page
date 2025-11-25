@@ -210,7 +210,7 @@ function ReferencePage({ entry, contentType }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
-      <Navigation scrollY={scrollY} data={homepageData} entry={homepageEntry} />
+      <Navigation scrollY={scrollY} data={homepageData?.navigation || homepageData} entry={homepageEntry} homepageUrl={homepageData?.homepageUrl || '/'} />
       
       <main className="pt-24 pb-16 px-4">
         <div className="container-custom">

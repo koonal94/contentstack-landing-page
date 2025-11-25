@@ -7,34 +7,89 @@ function isInLivePreview() {
   
   try {
     // Check if we're in an iframe (Live Preview opens in iframe)
-    const inIframe = window.self !== window.top
-    if (inIframe) return true
+    // This works for localhost but might fail on Launch due to CORS
+    try {
+      const inIframe = window.self !== window.top
+      if (inIframe) {
+        console.debug('[LivePreview] Detected iframe - Live Preview active')
+        return true
+      }
+    } catch (e) {
+      // CORS error - can't check iframe, continue with other checks
+      // On Launch, CORS might block iframe check, so we rely on other methods
+      console.debug('[LivePreview] CORS error checking iframe, trying other methods')
+    }
     
-    // Check for Live Preview URL parameters
-    const hasLivePreviewParams = window.location.search.includes('entry_uid') || 
-                                  window.location.search.includes('entryUid') ||
-                                  window.location.hash.includes('entry/')
-    if (hasLivePreviewParams) return true
+    // Check for Live Preview URL parameters (most reliable for Launch)
+    // Contentstack adds these when opening Live Preview
+    const urlParams = new URLSearchParams(window.location.search)
+    const hasEntryUid = urlParams.has('entry_uid') || urlParams.has('entryUid')
+    const hasContentType = urlParams.has('content_type_uid') || urlParams.has('contentTypeUid')
+    const hasHashEntry = window.location.hash.includes('entry/')
     
-    // NEW: Check sessionStorage/localStorage marker set by App when it loads an entry
+    if (hasEntryUid || hasContentType || hasHashEntry) {
+      console.debug('[LivePreview] Detected Live Preview URL parameters')
+      return true
+    }
+    
+    // Check for Contentstack-specific query parameters
+    const hasContentstackParams = window.location.search.includes('contentstack') ||
+                                  window.location.search.includes('live_preview') ||
+                                  window.location.search.includes('preview') ||
+                                  window.location.search.includes('cs_')
+    if (hasContentstackParams) {
+      console.debug('[LivePreview] Detected Contentstack query parameters')
+      return true
+    }
+    
+    // Check referrer - if coming from Contentstack app, we're in Live Preview
+    // This is very reliable for Launch-hosted sites
+    try {
+      const referrer = document.referrer || ''
+      if (referrer.includes('contentstack.com') || 
+          referrer.includes('contentstack.io') ||
+          referrer.includes('app.contentstack')) {
+        console.debug('[LivePreview] Detected Contentstack referrer:', referrer)
+        return true
+      }
+    } catch {}
+    
+    // Check sessionStorage/localStorage marker set by App when it loads an entry
     // This helps when preview is opened in new tab or iframe check fails
     try {
       const stored = sessionStorage.getItem('contentstack_entry_uid') ||
                      localStorage.getItem('contentstack_entry_uid')
-      if (stored) return true
+      if (stored) {
+        // Also check if we have Live Preview enabled in env
+        const livePreviewEnabled = (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
+        if (livePreviewEnabled) {
+          console.debug('[LivePreview] Detected stored entry UID with Live Preview enabled')
+          return true
+        }
+      }
     } catch {}
     
-    // NEW: Fallback to env flag (useful for local dev or preview-as-new-tab)
+    // CRITICAL: For Launch-hosted sites, check if Live Preview is enabled in environment
+    // This should be set to 'true' in Launch environment variables
     const livePreviewEnabled = (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
     if (livePreviewEnabled) {
-      return true
+      // Additional check: if we're on a Launch domain and Live Preview is enabled,
+      // assume we're in Live Preview when accessed from Contentstack
+      const isLaunchDomain = window.location.hostname.includes('contentstackapps.com') ||
+                            window.location.hostname.includes('contentstack.io')
+      if (isLaunchDomain) {
+        console.debug('[LivePreview] Launch domain detected with Live Preview enabled')
+        return true
+      }
     }
     
     return false
-  } catch {
+  } catch (e) {
     // If we can't check (CORS), fallback to env flag
+    console.warn('[LivePreview] Error in detection, using env flag fallback:', e)
     try {
-      return (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
+      const livePreviewEnabled = (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
+      return livePreviewEnabled
     } catch {
       return false
     }

@@ -1,4 +1,8 @@
-import { Zap, Shield, Globe, Code, Layers, Infinity } from 'lucide-react'
+import { 
+  Zap, Shield, Globe, Code, Layers, Infinity,
+  Book, FileText, Video, Download, Users,
+  Target, Lightbulb, Heart, Award
+} from 'lucide-react'
 
 const iconMap = {
   Zap,
@@ -7,6 +11,15 @@ const iconMap = {
   Code,
   Layers,
   Infinity,
+  Book,
+  FileText,
+  Video,
+  Download,
+  Users,
+  Target,
+  Lightbulb,
+  Heart,
+  Award,
 }
 
 export function getIconByName(name) {

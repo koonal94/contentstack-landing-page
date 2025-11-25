@@ -338,8 +338,25 @@ export async function fetchLogin(forcedEntryUid = null, ignoreStoredUid = false)
                                   window.location.search.includes('entryUid') ||
                                   window.location.hash.includes('entry/')
     
-    // Only add edit tags if we're in Live Preview (iframe or has preview params)
-    if (inIframe || hasLivePreviewParams) {
+    // Check referrer for Launch-hosted sites (more reliable than iframe check)
+    let hasContentstackReferrer = false
+    try {
+      const referrer = document.referrer || ''
+      hasContentstackReferrer = referrer.includes('contentstack.com') || 
+                                referrer.includes('contentstack.io') ||
+                                referrer.includes('app.contentstack')
+    } catch {}
+    
+    // Check if Live Preview is enabled in environment (for Launch)
+    const livePreviewEnabled = (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
+    const isLaunchDomain = typeof window !== 'undefined' && (
+      window.location.hostname.includes('contentstackapps.com') ||
+      window.location.hostname.includes('contentstack.io')
+    )
+    
+    // Only add edit tags if we're in Live Preview
+    // For Launch: check referrer, env flag, or URL params (iframe check may fail due to CORS)
+    if (inIframe || hasLivePreviewParams || (livePreviewEnabled && (hasContentstackReferrer || isLaunchDomain))) {
       try {
         const addEditableTags = Contentstack.Utils?.addEditableTags
         if (typeof addEditableTags === 'function') {

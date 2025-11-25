@@ -1,0 +1,143 @@
+{
+  "title": "Resources Page",
+  "uid": "resources",
+  "schema": [
+    {
+      "display_name": "Entry Title",
+      "uid": "entry_title",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": true,
+      "field_metadata": {},
+      "unique": false
+    },
+    {
+      "display_name": "URL",
+      "uid": "url",
+      "data_type": "text",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {
+        "instruction": "Custom URL for this entry (e.g., /resources or /resources/custom-page). Leave empty to use default /resources route."
+      },
+      "unique": false
+    },
+    {
+      "display_name": "Hero Section",
+      "uid": "hero",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Heading",
+          "uid": "heading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Subheading",
+          "uid": "subheading",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Resources",
+      "uid": "resources",
+      "data_type": "group",
+      "multiple": true,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Title",
+          "uid": "title",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Description",
+          "uid": "description",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        },
+        {
+          "display_name": "Icon",
+          "uid": "icon",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {
+            "instruction": "Icon name from lucide-react (e.g., Book, FileText, Video, Download, Users, Zap)"
+          }
+        },
+        {
+          "display_name": "Color",
+          "uid": "color",
+          "data_type": "text",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {
+            "instruction": "Gradient color classes (e.g., from-blue-500 to-blue-600)"
+          }
+        },
+        {
+          "display_name": "Link",
+          "uid": "link",
+          "data_type": "link",
+          "multiple": false,
+          "mandatory": false,
+          "field_metadata": {}
+        }
+      ]
+    },
+    {
+      "display_name": "Footer",
+      "uid": "footer",
+      "data_type": "group",
+      "multiple": false,
+      "mandatory": false,
+      "field_metadata": {},
+      "schema": [
+        {
+          "display_name": "Link Groups",
+          "uid": "link_groups",
+          "data_type": "group",
+          "multiple": true,
+          "mandatory": false,
+          "field_metadata": {},
+          "schema": [
+            {
+              "display_name": "Title",
+              "uid": "title",
+              "data_type": "text",
+              "multiple": false,
+              "mandatory": false,
+              "field_metadata": {}
+            },
+            {
+              "display_name": "Links",
+              "uid": "links",
+              "data_type": "link",
+              "multiple": true,
+              "mandatory": false,
+              "field_metadata": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

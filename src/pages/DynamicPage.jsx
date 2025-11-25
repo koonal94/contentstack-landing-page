@@ -7,6 +7,8 @@ import { mapGetStarted } from '../cms/getStarted'
 import HomePage from './HomePage'
 import LoginPage from './LoginPage'
 import GetStartedPage from './GetStartedPage'
+import ResourcesPage from './ResourcesPage'
+import CompanyPage from './CompanyPage'
 import ReferencePage from './ReferencePage'
 
 /**
@@ -82,6 +84,26 @@ function DynamicPage() {
               setLoading(false)
               return
             }
+          } else if (fullPath === '/resources') {
+            // Resources page - fetch default resources
+            const entry = await fetchEntryData('resources')
+            if (entry) {
+              setEntryData(entry)
+              setContentType('resources')
+              setComponent('resources')
+              setLoading(false)
+              return
+            }
+          } else if (fullPath === '/company') {
+            // Company page - fetch default company
+            const entry = await fetchEntryData('company')
+            if (entry) {
+              setEntryData(entry)
+              setContentType('company')
+              setComponent('company')
+              setLoading(false)
+              return
+            }
           }
           
           // No entry found - show 404 or redirect
@@ -149,6 +171,10 @@ function DynamicPage() {
     return <LoginPage />
   } else if (component === 'get_started') {
     return <GetStartedPage />
+  } else if (component === 'resources') {
+    return <ResourcesPage />
+  } else if (component === 'company') {
+    return <CompanyPage />
   } else if (component === 'reference' && entryData && contentType) {
     // Render reference content types (benefit_card, feature, footer_group, pricing_plan, testimonial)
     return <ReferencePage entry={entryData} contentType={contentType} />

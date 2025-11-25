@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react'
 import { getEditTag } from '../utils/getEditTag'
 import ThemeToggle from './ThemeToggle'
 
-const Navigation = ({ scrollY, data, entry }) => {
+const Navigation = ({ scrollY, data, entry, homepageUrl = '/' }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const location = useLocation()
@@ -58,13 +58,17 @@ const Navigation = ({ scrollY, data, entry }) => {
     }
   }
 
-  // Map navigation item names to section IDs (case-insensitive)
+  // Map navigation item names to section IDs (case-insensitive) - for hash links
   const nameToSectionId = {
     'product': 'features',
     'solutions': 'benefits',
     'pricing': 'pricing',
-    'resources': 'resources',
-    'company': 'company',
+  }
+
+  // Map navigation item names to page routes (case-insensitive)
+  const nameToPageRoute = {
+    'resources': '/resources',
+    'company': '/company',
   }
 
   // Ensure navItems is always an array with valid hrefs
@@ -76,8 +80,12 @@ const Navigation = ({ scrollY, data, entry }) => {
           const nameLower = name.toLowerCase().trim()
           let href = i.href || i.link || '#'
           
+          // For Resources and Company, force them to be page routes
+          if (nameToPageRoute[nameLower]) {
+            href = nameToPageRoute[nameLower]
+          }
           // For Product, Solutions, and Pricing, force them to be hash links to correct sections
-          if (nameToSectionId[nameLower]) {
+          else if (nameToSectionId[nameLower]) {
             const sectionId = nameToSectionId[nameLower]
             href = `#${sectionId}`
           }
@@ -94,8 +102,8 @@ const Navigation = ({ scrollY, data, entry }) => {
     : [
         { name: 'Product', href: '#features' },
         { name: 'Solutions', href: '#benefits' },
-        { name: 'Resources', href: '#resources' },
-        { name: 'Company', href: '#company' },
+        { name: 'Resources', href: '/resources' },
+        { name: 'Company', href: '/company' },
         { name: 'Pricing', href: '#pricing' },
       ]
 
@@ -111,14 +119,14 @@ const Navigation = ({ scrollY, data, entry }) => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link 
-            to="/" 
+            to={homepageUrl} 
             className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={(e) => {
-              // If already on homepage, scroll to top and clear hash
-              if (location.pathname === '/') {
+              // If already on homepage URL, scroll to top and clear hash
+              if (location.pathname === homepageUrl || location.pathname === homepageUrl.replace(/\/$/, '') || (homepageUrl === '/' && location.pathname === '/')) {
                 e.preventDefault()
                 // Clear the URL hash
-                window.history.pushState(null, '', '/')
+                window.history.pushState(null, '', homepageUrl)
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' })
               }
@@ -147,10 +155,29 @@ const Navigation = ({ scrollY, data, entry }) => {
               // Check if item.href is an external link
               const isExternal = item.href && item.href.startsWith('http')
               
-              // Force Product, Solutions, and Pricing to be hash links
+              // Check if this is a page route (Resources, Company)
               const nameLower = item.name?.toLowerCase().trim()
+              const isPageNavItem = nameToPageRoute[nameLower]
               const isHashNavItem = nameToSectionId[nameLower]
               
+              // Page routes (Resources, Company) - use Link component
+              if (isPageNavItem) {
+                return (
+                  <Link
+                    key={item.name}
+                    to={isPageNavItem}
+                    className={`font-medium transition-colors ${
+                      location.pathname === isPageNavItem
+                        ? 'text-primary-600 dark:text-primary-400'
+                        : 'text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              }
+              
+              // Hash links (Product, Solutions, Pricing) - use button with hash navigation
               if (isHashLink || isHashNavItem) {
                 // Ensure href is set correctly for hash nav items
                 const href = isHashNavItem ? `#${nameToSectionId[nameLower]}` : item.href
@@ -166,6 +193,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                 )
               }
               
+              // External links
               if (isExternal) {
                 return (
                   <a
@@ -180,11 +208,16 @@ const Navigation = ({ scrollY, data, entry }) => {
                 )
               }
               
+              // Generic internal links
               return (
                 <Link
                   key={item.name}
                   to={item.href || '/'}
-                  className="text-gray-300 hover:text-primary-400 transition-colors duration-200 font-medium"
+                  className={`font-medium transition-colors ${
+                    location.pathname === item.href
+                      ? 'text-primary-600 dark:text-primary-400'
+                      : 'text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
                 >
                   {item.name}
                 </Link>
@@ -226,10 +259,30 @@ const Navigation = ({ scrollY, data, entry }) => {
               const isHashLink = item.href && item.href.startsWith('#')
               const isExternal = item.href && item.href.startsWith('http')
               
-              // Force Product, Solutions, and Pricing to be hash links
+              // Check if this is a page route (Resources, Company)
               const nameLower = item.name?.toLowerCase().trim()
+              const isPageNavItem = nameToPageRoute[nameLower]
               const isHashNavItem = nameToSectionId[nameLower]
               
+              // Page routes (Resources, Company) - use Link component
+              if (isPageNavItem) {
+                return (
+                  <Link
+                    key={item.name}
+                    to={isPageNavItem}
+                    className={`block w-full text-left font-medium transition-colors py-2 ${
+                      location.pathname === isPageNavItem
+                        ? 'text-primary-600 dark:text-primary-400'
+                        : 'text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              }
+              
+              // Hash links (Product, Solutions, Pricing) - use button with hash navigation
               if (isHashLink || isHashNavItem) {
                 // Ensure href is set correctly for hash nav items
                 const href = isHashNavItem ? `#${nameToSectionId[nameLower]}` : item.href
@@ -248,6 +301,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                 )
               }
               
+              // External links
               if (isExternal) {
                 return (
                   <a
@@ -263,11 +317,16 @@ const Navigation = ({ scrollY, data, entry }) => {
                 )
               }
               
+              // Generic internal links
               return (
                 <Link
                   key={item.name}
                   to={item.href || '/'}
-                  className="block text-gray-700 hover:text-primary-600 transition-colors py-2"
+                  className={`block w-full text-left font-medium transition-colors py-2 ${
+                    location.pathname === item.href
+                      ? 'text-primary-600 dark:text-primary-400'
+                      : 'text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
                   onClick={() => setIsOpen(false)}
                 >
                   {item.name}

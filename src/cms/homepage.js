@@ -1,5 +1,6 @@
 import { getStack } from './contentstackClient'
 import Contentstack from 'contentstack'
+import { stripHtml } from '../utils/stripHtml'
 
 // Fetches the first published homepage entry marked as default
 // @param {string} forcedEntryUid - Optional entry UID to fetch (overrides detection)
@@ -507,8 +508,25 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
                                   window.location.search.includes('entryUid') ||
                                   window.location.hash.includes('entry/')
     
-    // Only add edit tags if we're in Live Preview (iframe or has preview params)
-    if (inIframe || hasLivePreviewParams) {
+    // Check referrer for Launch-hosted sites (more reliable than iframe check)
+    let hasContentstackReferrer = false
+    try {
+      const referrer = document.referrer || ''
+      hasContentstackReferrer = referrer.includes('contentstack.com') || 
+                                referrer.includes('contentstack.io') ||
+                                referrer.includes('app.contentstack')
+    } catch {}
+    
+    // Check if Live Preview is enabled in environment (for Launch)
+    const livePreviewEnabled = (import.meta.env.VITE_CONTENTSTACK_LIVE_PREVIEW || 'false') === 'true'
+    const isLaunchDomain = typeof window !== 'undefined' && (
+      window.location.hostname.includes('contentstackapps.com') ||
+      window.location.hostname.includes('contentstack.io')
+    )
+    
+    // Only add edit tags if we're in Live Preview
+    // For Launch: check referrer, env flag, or URL params (iframe check may fail due to CORS)
+    if (inIframe || hasLivePreviewParams || (livePreviewEnabled && (hasContentstackReferrer || isLaunchDomain))) {
       // Add Live Edit tags using Contentstack's addEditableTags method
       // This automatically generates data-cslp attributes in the correct format
       // Format: { 'data-cslp': 'content_type_uid.entry_uid.locale.field_path' }
@@ -731,7 +749,33 @@ export function mapHomepage(entry) {
     pricingData = null
   }
 
+  // Get homepage URL from entry - could be in url field or constructed from entry_title
+  let homepageUrl = fields?.url || entry?.url || entry?.fields?.url || '/'
+  // If URL is a full URL, extract just the path
+  if (homepageUrl && typeof homepageUrl === 'string' && homepageUrl.includes('://')) {
+    try {
+      const urlObj = new URL(homepageUrl)
+      homepageUrl = urlObj.pathname
+    } catch (e) {
+      // If URL parsing fails, try to extract path manually
+      const match = homepageUrl.match(/\/\/[^\/]+(\/.*)/)
+      if (match) {
+        homepageUrl = match[1]
+      }
+    }
+  }
+  // Ensure URL starts with / and doesn't end with /
+  if (homepageUrl && typeof homepageUrl === 'string') {
+    if (!homepageUrl.startsWith('/')) {
+      homepageUrl = '/' + homepageUrl
+    }
+    homepageUrl = homepageUrl.replace(/\/+$/, '') || '/'
+  } else {
+    homepageUrl = '/'
+  }
+
   return {
+    homepageUrl, // Add homepage URL to mapped data
     navigation: {
       brandName: fields?.navigation?.brand_name,
       items: fields?.navigation?.nav_items?.map((i) => ({
@@ -741,7 +785,7 @@ export function mapHomepage(entry) {
     },
     hero: {
       eyebrow: fields?.hero?.eyebrow,
-      heading: fields?.hero?.heading,
+      heading: fields?.hero?.heading, // Keep raw HTML for Live Preview - strip in component
       subheading: fields?.hero?.subheading,
       primaryCta: fields?.hero?.primary_cta,
       secondaryCta: fields?.hero?.secondary_cta,

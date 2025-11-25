@@ -2,6 +2,8 @@ import { getStack } from './contentstackClient'
 import { fetchHomepage } from './homepage'
 import { fetchLogin } from './login'
 import { fetchGetStarted } from './getStarted'
+import { fetchResources } from './resources'
+import { fetchCompany } from './company'
 
 /**
  * Fetches an entry by its URL field
@@ -29,6 +31,8 @@ export async function fetchEntryByUrl(urlPath) {
     'homepage',
     'login',
     'get_started',
+    'resources',
+    'company',
     'benefit_card',
     'feature',
     'footer_group',
@@ -106,6 +110,10 @@ export async function fetchEntryByUrl(urlPath) {
           component = 'login'
         } else if (contentType === 'get_started') {
           component = 'get_started'
+        } else if (contentType === 'resources') {
+          component = 'resources'
+        } else if (contentType === 'company') {
+          component = 'company'
         } else if (['benefit_card', 'feature', 'footer_group', 'pricing_plan', 'testimonial'].includes(contentType)) {
           // Reference content types - display as standalone pages
           component = 'reference'
@@ -147,6 +155,10 @@ export async function fetchEntryData(contentType, entryUid = null) {
       return await fetchLogin(entryUid, true)
     case 'get_started':
       return await fetchGetStarted(entryUid, true)
+    case 'resources':
+      return await fetchResources(entryUid, true)
+    case 'company':
+      return await fetchCompany(entryUid, true)
     case 'benefit_card':
     case 'feature':
     case 'footer_group':

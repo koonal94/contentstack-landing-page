@@ -410,7 +410,7 @@ function LoginPage() {
             />
           </div>
         </div>
-        <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} />
+        <Navigation scrollY={scrollY} data={homepageData?.navigation || cmsData?.navigation || {}} entry={homepageEntry || entry} homepageUrl={homepageData?.homepageUrl || '/'} />
         
         <section className="pt-32 pb-20 md:pt-40 md:pb-32 relative z-10">
         <div className="container-custom">
