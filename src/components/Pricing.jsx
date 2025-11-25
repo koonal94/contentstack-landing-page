@@ -55,7 +55,7 @@ const Pricing = ({ data, entry }) => {
     : defaultPlans
 
   return (
-    <section id="pricing" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 relative overflow-hidden">
+    <section id="pricing" className="py-12 md:py-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
@@ -71,21 +71,21 @@ const Pricing = ({ data, entry }) => {
           className="text-center mb-16"
         >
           <div 
-            className="inline-block px-4 py-2 bg-primary-900/50 text-primary-300 rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
+            className="inline-block px-4 py-2 bg-primary-900/50 text-white rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
             {...getEditTag(entry, 'pricing.eyebrow')}
           >
             {data?.eyebrow !== null && data?.eyebrow !== undefined ? data.eyebrow : '💎 Simple, Transparent Pricing'}
           </div>
           
           <h2 
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6"
             {...getEditTag(entry, 'pricing.heading')}
           >
             {data?.heading !== null && data?.heading !== undefined ? data.heading : 'Choose the Perfect Plan'}
           </h2>
           
           <p 
-            className="text-xl text-gray-300 max-w-2xl mx-auto"
+            className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
             {...getEditTag(entry, 'pricing.subheading')}
           >
             {data?.subheading !== null && data?.subheading !== undefined ? data.subheading : 'Start free, upgrade as you grow. All plans include 14-day free trial.'}
@@ -100,7 +100,7 @@ const Pricing = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className={`relative bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 transition-all duration-300 hover:bg-gray-900/60 ${
+              className={`relative bg-white/80 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800/20 rounded-lg p-8 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 shadow-lg dark:shadow-none ${
                 plan.popular
                   ? 'border-2 border-primary-500 scale-105 md:scale-110'
                   : ''
@@ -116,19 +116,19 @@ const Pricing = ({ data, entry }) => {
               )}
 
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
                 <div className="flex items-baseline justify-center mb-4">
-                  <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  <span className="text-gray-400 ml-2">{plan.period}</span>
+                  <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan.price}</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-2">{plan.period}</span>
                 </div>
-                <p className="text-gray-300">{plan.description}</p>
+                <p className="text-gray-600 dark:text-gray-300">{plan.description}</p>
               </div>
 
               <ul className="space-y-4 mb-8">
                 {plan.features.map((feature, featureIdx) => (
                   <li key={featureIdx} className="flex items-start">
                     <Check className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5 mr-3" />
-                    <span className="text-gray-300">{feature}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -153,7 +153,7 @@ const Pricing = ({ data, entry }) => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center text-gray-400 mt-12"
+            className="text-center text-gray-700 dark:text-gray-400 mt-12"
             {...getEditTag(entry, 'pricing.note')}
           >
             {data.note}
@@ -164,7 +164,7 @@ const Pricing = ({ data, entry }) => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-center text-gray-400 mt-12"
+            className="text-center text-gray-700 dark:text-gray-400 mt-12"
             {...getEditTag(entry, 'pricing.note')}
             style={{ minHeight: '1rem' }}
           >

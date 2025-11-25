@@ -78,34 +78,48 @@ export async function fetchHomepage(forcedEntryUid = null, ignoreStoredUid = fal
   }
   
   // CRITICAL: Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // OR if we're using URL-based routing (stored by DynamicPage)
   // When NOT in live preview (production/Launch), NEVER use stored UIDs - always query published entries
   // This ensures Launch website always fetches the latest published entry, not a stale draft UID
   // Also skip if ignoreStoredUid is true (for fetching homepage data for logo)
-  if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
+  if (!entryUid && !ignoreStoredUid && typeof window !== 'undefined') {
     try {
-      const stored = localStorage.getItem('contentstack_entry_uid') || 
-                    sessionStorage.getItem('contentstack_entry_uid')
-      if (stored) {
-        entryUid = stored
+      // Check if we're using URL-based routing
+      const isUrlBased = sessionStorage.getItem('contentstack_url_based') === 'true'
+      const storedContentType = sessionStorage.getItem('contentstack_content_type')
+      
+      // Use stored UID if in iframe (Live Preview) OR if URL-based routing is active
+      if (inIframe || (isUrlBased && storedContentType === 'homepage')) {
+        const stored = localStorage.getItem('contentstack_entry_uid') || 
+                      sessionStorage.getItem('contentstack_entry_uid')
+        if (stored) {
+          entryUid = stored
+        }
       }
     } catch {}
   }
   
   // CRITICAL FIX: When NOT in Live Preview (production/Launch), clear any stored UIDs
   // to ensure we always query for published entries, not draft/unpublished entries
+  // BUT: Don't clear if URL-based routing is active (set by DynamicPage)
   if (!inIframe && !forcedEntryUid && typeof window !== 'undefined') {
     try {
-      // Clear stored UIDs that might point to draft/unpublished entries
-      // This ensures production always queries for published entries
-      const storedContentType = sessionStorage.getItem('contentstack_content_type')
-      if (storedContentType === contentType) {
-        sessionStorage.removeItem('contentstack_entry_uid')
-        sessionStorage.removeItem('contentstack_homepage_last_version')
-        sessionStorage.removeItem('contentstack_homepage_last_updated')
-      }
-      const localContentType = localStorage.getItem('contentstack_content_type')
-      if (localContentType === contentType) {
-        localStorage.removeItem('contentstack_entry_uid')
+      const isUrlBased = sessionStorage.getItem('contentstack_url_based') === 'true'
+      
+      // Only clear stored UIDs if URL-based routing is NOT active
+      if (!isUrlBased) {
+        // Clear stored UIDs that might point to draft/unpublished entries
+        // This ensures production always queries for published entries
+        const storedContentType = sessionStorage.getItem('contentstack_content_type')
+        if (storedContentType === contentType) {
+          sessionStorage.removeItem('contentstack_entry_uid')
+          sessionStorage.removeItem('contentstack_homepage_last_version')
+          sessionStorage.removeItem('contentstack_homepage_last_updated')
+        }
+        const localContentType = localStorage.getItem('contentstack_content_type')
+        if (localContentType === contentType) {
+          localStorage.removeItem('contentstack_entry_uid')
+        }
       }
       // Clear entryUid to force query for published entries
       entryUid = ''

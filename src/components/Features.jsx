@@ -44,7 +44,7 @@ const Features = ({ data, entry }) => {
   ]
 
   return (
-    <section id="features" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
+    <section id="features" className="py-12 md:py-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -53,11 +53,11 @@ const Features = ({ data, entry }) => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
             Everything You Need to
             <span className="gradient-text"> Succeed</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Powerful features designed to make content management effortless 
             and development lightning-fast.
           </p>
@@ -71,7 +71,7 @@ const Features = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-6 hover:bg-gray-900/60 transition-all duration-300 transform hover:-translate-y-1 group"
+              className="bg-white/80 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800/20 rounded-lg p-6 hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-all duration-300 transform hover:-translate-y-1 group shadow-lg dark:shadow-none"
               {...getEditTag(entry, 'features.items')}
             >
               <div
@@ -88,10 +88,10 @@ const Features = ({ data, entry }) => {
                   })()
                 )}
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 !text-gray-900 dark:!text-white">
                 {feature.title}
               </h3>
-              <p className="text-gray-300 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed !text-gray-600 dark:!text-gray-300">
                 {feature.description}
               </p>
             </motion.div>

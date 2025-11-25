@@ -51,14 +51,18 @@ export async function fetchLogin(forcedEntryUid = null, ignoreStoredUid = false)
   }
   
   // Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // OR if we're using URL-based routing (stored by DynamicPage)
   // When NOT in live preview, skip stored UIDs to fetch published entries
   // Also skip if ignoreStoredUid is true
-  if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
+  if (!entryUid && !ignoreStoredUid && typeof window !== 'undefined') {
     try {
       const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
                                 localStorage.getItem('contentstack_content_type')
       
-      if (storedContentType === 'login') {
+      // Use stored UID if in iframe (Live Preview) OR if URL-based routing is active
+      const isUrlBased = sessionStorage.getItem('contentstack_url_based') === 'true'
+      
+      if (storedContentType === 'login' && (inIframe || isUrlBased)) {
         const stored = localStorage.getItem('contentstack_entry_uid') || 
                       sessionStorage.getItem('contentstack_entry_uid')
         if (stored) {

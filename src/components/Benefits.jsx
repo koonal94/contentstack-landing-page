@@ -43,7 +43,7 @@ const Benefits = ({ data, entry }) => {
   ]
 
   return (
-    <section id="benefits" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
+    <section id="benefits" className="py-12 md:py-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -53,7 +53,7 @@ const Benefits = ({ data, entry }) => {
           className="text-center mb-16"
         >
           <h2 
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4"
             {...getEditTag(entry, 'benefits.title')}
           >
             {data?.title || (
@@ -63,7 +63,7 @@ const Benefits = ({ data, entry }) => {
             )}
           </h2>
           <p 
-            className="text-xl text-gray-300 max-w-3xl mx-auto"
+            className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto"
             {...getEditTag(entry, 'benefits.subtitle')}
           >
             {data?.subtitle || 'Join thousands of companies delivering exceptional digital experiences with the power of headless CMS.'}
@@ -78,20 +78,20 @@ const Benefits = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 hover:bg-gray-900/60 transition-all duration-300"
+              className="bg-white/80 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800/20 rounded-lg p-8 hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-all duration-300 shadow-lg dark:shadow-none"
               {...getEditTag(entry, 'benefits.cards')}
             >
-              <h3 className="text-2xl font-bold text-white mb-4">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 {benefit.title}
               </h3>
-              <p className="text-gray-300 mb-6 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                 {benefit.description}
               </p>
               <ul className="space-y-3">
                 {benefit.features.map((feature, featureIdx) => (
                   <li key={feature} className="flex items-start">
                     <CheckCircle2 className="w-5 h-5 text-primary-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-300">{feature}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -105,7 +105,7 @@ const Benefits = ({ data, entry }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 md:p-12"
+          className="bg-gray-100 dark:bg-gray-900/40 border border-gray-300 dark:border-gray-800/20 rounded-lg p-8 md:p-12"
           {...getEditTag(entry, 'benefits.stats')}
         >
           <div className="grid md:grid-cols-4 gap-8 text-center">
@@ -120,7 +120,7 @@ const Benefits = ({ data, entry }) => {
             ).map((s, idx) => (
               <div key={idx}>
                 <div className="text-4xl md:text-5xl font-bold gradient-text mb-2">{s.value}</div>
-                <div className="text-gray-400">{s.label}</div>
+                <div className="text-gray-700 dark:text-gray-400">{s.label}</div>
               </div>
             ))}
           </div>

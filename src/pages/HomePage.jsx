@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import Hero from '../components/Hero'
+import CustomerLogos from '../components/CustomerLogos'
 import Features from '../components/Features'
 import Benefits from '../components/Benefits'
 import Testimonials from '../components/Testimonials'
@@ -483,6 +484,7 @@ function HomePage() {
     <div className="min-h-screen bg-gray-900">
       <Navigation scrollY={scrollY} data={cmsData?.navigation} entry={entry} />
       <Hero data={cmsData?.hero} loading={loading} entry={entry} />
+      <CustomerLogos data={cmsData?.customerLogos} entry={entry} />
       <Features data={cmsData?.features} entry={entry} />
       <Benefits data={cmsData?.benefits} entry={entry} />
       <Testimonials data={cmsData?.testimonials} entry={entry} />

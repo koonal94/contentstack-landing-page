@@ -51,14 +51,18 @@ export async function fetchGetStarted(forcedEntryUid = null, ignoreStoredUid = f
   }
   
   // Only check localStorage/sessionStorage for entry UID if in Live Preview (iframe)
+  // OR if we're using URL-based routing (stored by DynamicPage)
   // When NOT in live preview, skip stored UIDs to fetch published entries
   // Also skip if ignoreStoredUid is true
-  if (!entryUid && inIframe && !ignoreStoredUid && typeof window !== 'undefined') {
+  if (!entryUid && !ignoreStoredUid && typeof window !== 'undefined') {
     try {
       const storedContentType = sessionStorage.getItem('contentstack_content_type') || 
                                 localStorage.getItem('contentstack_content_type')
       
-      if (storedContentType === 'get_started') {
+      // Use stored UID if in iframe (Live Preview) OR if URL-based routing is active
+      const isUrlBased = sessionStorage.getItem('contentstack_url_based') === 'true'
+      
+      if (storedContentType === 'get_started' && (inIframe || isUrlBased)) {
         const stored = localStorage.getItem('contentstack_entry_uid') || 
                       sessionStorage.getItem('contentstack_entry_uid')
         if (stored) {
@@ -413,33 +417,52 @@ export async function fetchGetStarted(forcedEntryUid = null, ignoreStoredUid = f
         const addEditableTags = Contentstack.Utils?.addEditableTags
         if (typeof addEditableTags === 'function') {
           addEditableTags(entry, contentType, true, locale)
+        }
+        
+        // Always create edit tags (even if addEditableTags didn't create them)
+        const editTags = entry.$ || entry.fields?.$ || null
+        const currentEntryUid = entry.uid || ''
+        
+        if (currentEntryUid) {
+          const entryData = entry.fields
           
-          const editTags = entry.$ || entry.fields?.$ || null
-          const currentEntryUid = entry.uid || ''
+          // Define all groups and their fields based on the content model
+          const groupFields = {
+            hero: ['eyebrow', 'heading', 'subheading'],
+            steps: [],
+            form: ['title', 'subtitle', 'name_label', 'email_label', 'company_label', 'submit_text', 'terms_text'],
+            benefits: [],
+            footer: ['link_groups'],
+          }
           
-          if (editTags) {
-            
-            const entryData = entry.fields
-            
-            // Define all groups and their fields based on the content model
-            const groupFields = {
-              hero: ['eyebrow', 'heading', 'subheading'],
-              steps: [],
-              form: ['title', 'subtitle', 'name_label', 'email_label', 'company_label', 'submit_text', 'terms_text'],
-              benefits: [],
-              footer: ['link_groups'],
+          // Create field-level tags for each group
+          // Create tags for all groups in groupFields, regardless of whether group-level tag exists
+          // This ensures edit buttons appear even if addEditableTags didn't create group-level tags
+          Object.keys(groupFields).forEach(groupName => {
+            // Ensure entry.fields.group.$ exists
+            if (!entryData[groupName].$) {
+              entryData[groupName].$ = {}
             }
             
-            // Create field-level tags for each group
-            // Create tags for all groups in groupFields, regardless of whether group-level tag exists
-            // This ensures edit buttons appear even if addEditableTags didn't create group-level tags
-            Object.keys(groupFields).forEach(groupName => {
-              // Ensure entry.fields.group.$ exists
-              if (!entryData[groupName].$) {
-                entryData[groupName].$ = {}
+            const fields = groupFields[groupName]
+            
+            // For array fields (empty fields array), create group-level tag
+            if (fields.length === 0) {
+              // Create group-level tag for array fields (steps, benefits)
+              const groupTagValue = `${contentType}.${currentEntryUid}.${locale}.${groupName}`
+              entryData[groupName].$ = {
+                'data-cslp': groupTagValue
               }
               
-              const fields = groupFields[groupName]
+              // ALSO create in entry.$ for compatibility
+              if (!entry.$) {
+                entry.$ = {}
+              }
+              entry.$[groupName] = {
+                'data-cslp': groupTagValue
+              }
+            } else {
+              // For regular fields, create field-level tags
               fields.forEach(fieldName => {
                 // Create field-level tag - format: contentType.entryUid.locale.groupField.fieldName
                 const editTagValue = `${contentType}.${currentEntryUid}.${locale}.${groupName}.${fieldName}`
@@ -461,8 +484,8 @@ export async function fetchGetStarted(forcedEntryUid = null, ignoreStoredUid = f
                   'data-cslp': editTagValue
                 }
               })
-            })
-          }
+            }
+          })
         }
       } catch (e) {
         // Silent error handling for edit tags

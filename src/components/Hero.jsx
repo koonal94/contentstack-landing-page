@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Play, Code, Globe, Shield, BarChart3, Users, Zap } from 'lucide-react'
+import { ArrowRight, Play, Code, Globe, Shield, BarChart3, Users, Zap, ChevronLeft, ChevronRight, Pause } from 'lucide-react'
 import { getEditTag } from '../utils/getEditTag'
 
 const Hero = ({ data, loading, entry }) => {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
 
   const slides = [
     {
@@ -25,7 +26,7 @@ const Hero = ({ data, loading, entry }) => {
           <div className="grid grid-cols-2 gap-3 mt-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-gray-700 rounded-lg p-3 h-16 flex items-center justify-center">
-                <div className="text-primary-400 font-bold text-sm">Content {i}</div>
+                <div className="text-white font-bold text-sm">Content {i}</div>
               </div>
             ))}
           </div>
@@ -44,7 +45,7 @@ const Hero = ({ data, loading, entry }) => {
       visual: (
         <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-primary-400 text-xs font-mono mb-2">GET /v3/content_types</div>
+            <div className="text-white text-xs font-mono mb-2">GET /v3/content_types</div>
             <div className="text-gray-300 text-xs font-mono">
               {`{
   "content_type": {...},
@@ -54,12 +55,12 @@ const Hero = ({ data, loading, entry }) => {
           </div>
           <div className="flex items-center space-x-2">
             <div className="flex-1 h-2 bg-gradient-to-r from-primary-500 to-purple-500 rounded"></div>
-            <div className="text-primary-400 text-xs">API</div>
+            <div className="text-primary-600 dark:text-primary-400 text-xs">API</div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {['REST', 'GraphQL', 'Webhooks'].map((api, i) => (
               <div key={i} className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-primary-400 text-xs font-semibold">{api}</div>
+                <div className="text-white text-xs font-semibold">{api}</div>
               </div>
             ))}
           </div>
@@ -76,19 +77,19 @@ const Hero = ({ data, loading, entry }) => {
             <div className="bg-gray-700 rounded-lg p-3 w-16 h-16 flex items-center justify-center">
               <div className="text-2xl">🌐</div>
             </div>
-            <div className="text-primary-400 text-2xl">→</div>
+            <div className="text-primary-600 dark:text-primary-400 text-2xl">→</div>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-xs text-primary-400">Web</div>
+                <div className="text-xs text-white">Web</div>
               </div>
               <div className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-xs text-primary-400">Mobile</div>
+                <div className="text-xs text-white">Mobile</div>
               </div>
               <div className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-xs text-primary-400">IoT</div>
+                <div className="text-xs text-white">IoT</div>
               </div>
               <div className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-xs text-primary-400">Apps</div>
+                <div className="text-xs text-white">Apps</div>
               </div>
             </div>
           </div>
@@ -105,15 +106,15 @@ const Hero = ({ data, loading, entry }) => {
           <div className="grid grid-cols-3 gap-2 mb-4">
             {[85, 92, 78].map((val, i) => (
               <div key={i} className="text-center">
-                <div className="text-2xl font-bold text-primary-400">{val}%</div>
-                <div className="text-xs text-gray-400 mt-1">Metric {i + 1}</div>
+                <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{val}%</div>
+                <div className="text-xs text-gray-700 dark:text-gray-400 mt-1">Metric {i + 1}</div>
               </div>
             ))}
           </div>
           <div className="space-y-2">
             {[75, 90, 65, 85].map((height, i) => (
               <div key={i} className="flex items-center space-x-2">
-                <div className="text-xs text-gray-400 w-12">Q{i + 1}</div>
+                <div className="text-xs text-gray-700 dark:text-gray-400 w-12">Q{i + 1}</div>
                 <div className="flex-1 bg-gray-700 rounded-full h-4 overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-primary-500 to-purple-500 rounded-full"
@@ -142,7 +143,7 @@ const Hero = ({ data, loading, entry }) => {
           <div className="grid grid-cols-2 gap-2">
             {['SOC 2', 'GDPR', 'ISO 27001', 'SSO'].map((cert, i) => (
               <div key={i} className="bg-gray-700 rounded p-2 text-center">
-                <div className="text-xs text-primary-400 font-semibold">{cert}</div>
+                <div className="text-xs text-white font-semibold">{cert}</div>
               </div>
             ))}
           </div>
@@ -179,15 +180,17 @@ const Hero = ({ data, loading, entry }) => {
   ]
 
   useEffect(() => {
+    if (isPaused) return
+    
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length)
     }, 4000) // Change slide every 4 seconds
 
     return () => clearInterval(interval)
-  }, [slides.length])
+  }, [slides.length, isPaused])
 
   return (
-    <section className="relative pt-32 pb-12 md:pt-40 md:pb-16 overflow-hidden bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
+    <section className="relative pt-32 pb-12 md:pt-40 md:pb-16 overflow-hidden bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
       {/* Contentstack-style Mesh Gradient Background with Zoom Animations */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Mesh Gradient Layers - Flowing organic shapes with slide-synced zoom */}
@@ -370,26 +373,26 @@ const Hero = ({ data, loading, entry }) => {
       </div>
 
       <div className="container-custom relative z-10">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Text Content */}
+        <div className="flex flex-col items-center gap-12">
+          {/* Main Content - Centered */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center md:text-left"
+            className="text-center max-w-4xl"
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-block px-4 py-2 bg-primary-900/50 text-primary-200 rounded-full text-sm font-semibold mb-6 border border-primary-700/50 animate-pulse-slow"
+              className="inline-block px-4 py-2 bg-primary-900/50 text-white rounded-full text-sm font-semibold mb-6 border border-primary-700/50 animate-pulse-slow"
               {...getEditTag(entry, 'hero.eyebrow')}
             >
               {data?.eyebrow || '🚀 The Future of Content Management'}
             </motion.div>
             
             <motion.h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
@@ -399,7 +402,7 @@ const Hero = ({ data, loading, entry }) => {
                 data.heading
               ) : (
                 <>
-                  Build <motion.span 
+                  <span className="whitespace-nowrap">Build <motion.span 
                     className="gradient-text inline-block"
                     animate={{
                       backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -412,23 +415,21 @@ const Hero = ({ data, loading, entry }) => {
                     style={{
                       backgroundSize: '200% auto',
                     }}
-                  >Modern</motion.span>
+                  >Modern</motion.span> Digital&nbsp;Experiences</span>
                   <br />
-                  Digital Experiences
-                  <br />
-                  Faster Than Ever
+                  <span className="whitespace-nowrap">Faster Than Ever</span>
                 </>
               )}
             </motion.h1>
             
             <p 
-              className="text-xl text-gray-300 mb-8 leading-relaxed"
+              className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed"
               {...getEditTag(entry, 'hero.subheading')}
             >
               {data?.subheading || 'The leading headless CMS that empowers teams to deliver content-rich experiences across any platform, at scale.'}
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
                 whileHover={{ 
                   scale: 1.05,
@@ -469,7 +470,7 @@ const Hero = ({ data, loading, entry }) => {
             </div>
 
             <div 
-              className="mt-12 flex flex-wrap items-center justify-center md:justify-start gap-8 text-sm text-gray-400"
+              className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-700 dark:text-gray-400"
               {...getEditTag(entry, 'hero.stats')}
             >
               {(data?.stats?.length ? data.stats : [
@@ -485,19 +486,19 @@ const Hero = ({ data, loading, entry }) => {
                   className="animate-float"
                   style={{ animationDelay: `${idx * 0.2}s` }}
                 >
-                  <div className="text-2xl font-bold text-white">{s.value}</div>
-                  <div>{s.label}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</div>
+                  <div className="text-gray-700 dark:text-gray-400">{s.label}</div>
                 </motion.div>
               ))}
             </div>
           </motion.div>
 
-          {/* Right Column - Slideshow */}
+          {/* Slideshow - Below Main Content, Centered */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+            className="relative w-full max-w-4xl"
           >
             <div className="relative p-8">
               {/* Slideshow Container */}
@@ -520,8 +521,8 @@ const Hero = ({ data, loading, entry }) => {
                             {slide.icon}
                           </div>
                           <div>
-                            <h3 className="text-lg font-bold text-white">{slide.title}</h3>
-                            <p className="text-sm text-gray-400">{slide.description}</p>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{slide.title}</h3>
+                            <p className="text-sm text-gray-700 dark:text-gray-400">{slide.description}</p>
                           </div>
                         </div>
                         
@@ -535,69 +536,58 @@ const Hero = ({ data, loading, entry }) => {
                 </AnimatePresence>
               </div>
 
-              {/* Slide Indicators */}
-              <div className="flex items-center justify-center space-x-2 mt-6">
-                {slides.map((_, index) => (
+              {/* Slide Indicators and Navigation Controls - Same Row */}
+              <div className="flex items-center justify-between mt-6 relative">
+                {/* Slide Indicators - Centered */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="flex items-center space-x-2">
+                    {slides.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                          index === currentSlide
+                            ? 'w-8 bg-gradient-to-r from-primary-500 to-purple-500'
+                            : 'w-2 bg-gray-600/50 hover:bg-gray-500/50'
+                        }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Navigation Controls - Right Corner */}
+                <div className="absolute right-0 flex items-center space-x-2">
                   <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                      index === currentSlide
-                        ? 'w-8 bg-gradient-to-r from-primary-500 to-purple-500'
-                        : 'w-2 bg-gray-600/50 hover:bg-gray-500/50'
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
+                    onClick={() => setIsPaused(!isPaused)}
+                    className="w-10 h-10 rounded-full border-2 border-white/30 dark:border-gray-600 bg-gray-900/50 dark:bg-gray-800/50 hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-200 flex items-center justify-center"
+                    aria-label={isPaused ? 'Play slideshow' : 'Pause slideshow'}
+                  >
+                    {isPaused ? (
+                      <Play className="w-4 h-4 text-white dark:text-gray-300 ml-0.5" />
+                    ) : (
+                      <Pause className="w-4 h-4 text-white dark:text-gray-300" />
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+                    className="w-10 h-10 rounded bg-gray-800/80 dark:bg-gray-700/80 hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200 flex items-center justify-center"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-white dark:text-gray-300" />
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+                    className="w-10 h-10 rounded bg-gray-800/80 dark:bg-gray-700/80 hover:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200 flex items-center justify-center"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="w-5 h-5 text-white dark:text-gray-300" />
+                  </button>
+                </div>
               </div>
             </div>
-            
-            {/* Floating badge - positioned at top right corner */}
-            <motion.div
-              animate={{ 
-                y: [0, -8, 0],
-                scale: [1, 1.03, 1],
-                rotate: [0, 3, -3, 0]
-              }}
-              transition={{ 
-                duration: 5, 
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute top-0 right-0 bg-gradient-to-br from-primary-500/20 via-purple-500/15 to-transparent backdrop-blur-md border border-primary-500/40 rounded-lg shadow-xl p-3 z-30"
-              style={{
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-              }}
-            >
-              <div className="text-xs font-semibold text-primary-300 drop-shadow-lg">
-                {slides[currentSlide].title.split(' ').slice(1).join(' ') || slides[currentSlide].title.split(' ').slice(-1)[0]}
-              </div>
-            </motion.div>
-            
-            {/* Floating badge - positioned at bottom left corner */}
-            <motion.div
-              animate={{ 
-                y: [0, 8, 0],
-                scale: [1, 1.03, 1],
-                rotate: [0, -3, 3, 0]
-              }}
-              transition={{ 
-                duration: 5, 
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.5
-              }}
-              className="absolute bottom-0 left-0 bg-gradient-to-br from-purple-500/20 via-primary-500/15 to-transparent backdrop-blur-md border border-primary-500/40 rounded-lg shadow-xl p-3 z-30"
-              style={{
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-              }}
-            >
-              <div className="text-xs font-semibold text-primary-300 drop-shadow-lg">
-                {slides[currentSlide].title.split(' ')[0]}
-              </div>
-            </motion.div>
           </motion.div>
         </div>
       </div>

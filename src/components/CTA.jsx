@@ -4,7 +4,7 @@ import { getEditTag } from '../utils/getEditTag'
 
 const CTA = ({ data, entry }) => {
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 relative overflow-hidden">
+    <section className="py-12 md:py-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 relative overflow-hidden">
       {/* Contentstack-style Mesh Gradient Background with Zoom Animations - Matching Hero */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Mesh Gradient Layers - Flowing organic shapes with zoom animations */}
@@ -194,11 +194,11 @@ const CTA = ({ data, entry }) => {
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             className="inline-block mb-6"
           >
-            <Sparkles className="w-12 h-12 text-white" />
+            <Sparkles className="w-12 h-12 text-gray-900 dark:text-white" />
           </motion.div>
 
           <h2 
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6"
             {...getEditTag(entry, 'cta.title')}
           >
             {data?.title || (
@@ -211,7 +211,7 @@ const CTA = ({ data, entry }) => {
           </h2>
           
           <p 
-            className="text-xl text-primary-200 mb-8 leading-relaxed"
+            className="text-xl text-gray-700 dark:text-white mb-8 leading-relaxed"
             {...getEditTag(entry, 'cta.subtitle')}
           >
             {data?.subtitle || 'Join thousands of companies delivering exceptional digital experiences. Start your free 14-day trial today. No credit card required.'}
@@ -231,14 +231,14 @@ const CTA = ({ data, entry }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold text-lg hover:bg-gray-900 hover:text-primary-400 transition-all duration-200"
+              className="px-8 py-4 bg-transparent border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white rounded-lg font-semibold text-lg hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
               {...getEditTag(entry, 'cta.secondary_cta')}
             >
               {data?.secondaryText || 'Schedule a Demo'}
             </motion.button>
           </div>
 
-          <p className="mt-6 text-sm text-primary-100">
+          <p className="mt-6 text-sm text-gray-700 dark:text-white">
             ✨ 14-day free trial • No credit card required • Cancel anytime
           </p>
         </motion.div>

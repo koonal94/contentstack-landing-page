@@ -438,9 +438,9 @@ function GetStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Main Content Section with Background Animations */}
-      <div className="relative bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 overflow-hidden">
         {/* Background animations matching hero section */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0">
@@ -501,21 +501,21 @@ function GetStartedPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="inline-block px-4 py-2 bg-primary-900/50 text-primary-300 rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
+                className="inline-block px-4 py-2 bg-primary-900/50 text-white rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
                 {...getEditTag(entry, 'hero.eyebrow')}
               >
                 {cmsData?.hero?.eyebrow || '🚀 Start Your Journey'}
               </motion.div>
               
               <h1 
-                className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
                 {...getEditTag(entry, 'hero.heading')}
               >
                 {cmsData?.hero?.heading || 'Get Started Today'}
               </h1>
               
               <p 
-                className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed"
+                className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed"
                 {...getEditTag(entry, 'hero.subheading')}
               >
                 {cmsData?.hero?.subheading || 'Join thousands of companies building modern digital experiences with our platform.'}
@@ -527,8 +527,13 @@ function GetStartedPage() {
               <div className="space-y-12">
                 {/* Steps */}
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-8">How It Works</h2>
-                  <div className="space-y-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
+                    How It Works
+                  </h2>
+                  <div 
+                    className="space-y-6"
+                    {...getEditTag(entry, 'steps')}
+                  >
                     {(cmsData?.steps || [
                       { number: 1, title: 'Create Your Account', description: 'Sign up with your email and company details' },
                       { number: 2, title: 'Set Up Your Stack', description: 'Configure your content model and workspace' },
@@ -545,8 +550,8 @@ function GetStartedPage() {
                           {step.number || idx + 1}
                         </div>
                         <div className="flex-1 pt-1">
-                          <h3 className="text-lg font-semibold text-white mb-1">{step.title}</h3>
-                          <p className="text-gray-300">{step.description}</p>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{step.title}</h3>
+                          <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -555,8 +560,13 @@ function GetStartedPage() {
 
                 {/* Benefits */}
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">What You'll Get</h2>
-                  <div className="space-y-4">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    What You'll Get
+                  </h2>
+                  <div 
+                    className="space-y-4"
+                    {...getEditTag(entry, 'benefits')}
+                  >
                     {(cmsData?.benefits || [
                       { title: '14-day free trial', description: 'Full access to all features' },
                       { title: 'No credit card required', description: 'Start risk-free' },
@@ -573,8 +583,8 @@ function GetStartedPage() {
                           <Check className="w-4 h-4 text-primary-400" />
                         </div>
                         <div>
-                          <div className="font-semibold text-white">{benefit.title}</div>
-                          <div className="text-sm text-gray-300">{benefit.description}</div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{benefit.title}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300">{benefit.description}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -587,17 +597,17 @@ function GetStartedPage() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10 sticky top-32"
+                className="bg-white/90 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10 sticky top-32"
               >
                 <div className="mb-8">
                   <h2 
-                    className="text-2xl font-bold text-white mb-2"
+                    className="text-2xl font-bold text-gray-900 dark:text-white mb-2"
                     {...getEditTag(entry, 'form.title')}
                   >
                     {cmsData?.form?.title || 'Create Your Account'}
                   </h2>
                   <p 
-                    className="text-gray-300"
+                    className="text-gray-600 dark:text-gray-300"
                     {...getEditTag(entry, 'form.subtitle')}
                   >
                     {cmsData?.form?.subtitle || 'Fill in your details to get started'}
@@ -608,18 +618,18 @@ function GetStartedPage() {
                   {/* Name */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-300 mb-2"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.name_label')}
                     >
                       {cmsData?.form?.nameLabel || 'Full Name'}
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-5 h-5" />
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="John Doe"
                         required
                       />
@@ -629,18 +639,18 @@ function GetStartedPage() {
                   {/* Email */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-300 mb-2"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.email_label')}
                     >
                       {cmsData?.form?.emailLabel || 'Email Address'}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-5 h-5" />
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="you@example.com"
                         required
                       />
@@ -650,18 +660,18 @@ function GetStartedPage() {
                   {/* Company */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-300 mb-2"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.company_label')}
                     >
                       {cmsData?.form?.companyLabel || 'Company Name'}
                     </label>
                     <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-5 h-5" />
                       <input
                         type="text"
                         value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="Your Company"
                         required
                       />
@@ -672,10 +682,10 @@ function GetStartedPage() {
                   <div className="flex items-start">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 text-primary-600 border-gray-600 bg-gray-900 rounded focus:ring-primary-500 mt-1"
+                      className="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 rounded focus:ring-primary-500 mt-1"
                       required
                     />
-                    <label className="ml-2 text-sm text-gray-300">
+                    <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                       <span {...getEditTag(entry, 'form.terms_text')}>
                         {cmsData?.form?.termsText || 'I agree to the Terms of Service and Privacy Policy'}
                       </span>
@@ -695,7 +705,7 @@ function GetStartedPage() {
                   </motion.button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                   Already have an account?{' '}
                   <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
                     Sign In

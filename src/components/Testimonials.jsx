@@ -39,7 +39,7 @@ const Testimonials = ({ data, entry }) => {
   ]
 
   return (
-    <section id="testimonials" className="py-12 md:py-16 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950">
+    <section id="testimonials" className="py-12 md:py-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,8 +48,8 @@ const Testimonials = ({ data, entry }) => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">Loved by Teams<span className="gradient-text"> Worldwide</span></h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">Loved by Teams<span className="gradient-text"> Worldwide</span></h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             See what developers, marketers, and business leaders are saying 
             about their experience with ContentStack.
           </p>
@@ -63,7 +63,7 @@ const Testimonials = ({ data, entry }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-gray-900/40 border border-gray-800/20 rounded-lg p-8 relative hover:bg-gray-900/60 transition-all duration-300"
+              className="bg-white/80 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800/20 rounded-lg p-8 relative hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-all duration-300 shadow-lg dark:shadow-none"
               {...getEditTag(entry, 'testimonials.items')}
             >
               <Quote className="w-12 h-12 text-primary-200 mb-4" />
@@ -74,17 +74,17 @@ const Testimonials = ({ data, entry }) => {
                 ))}
               </div>
 
-              <p className="text-gray-300 mb-6 leading-relaxed italic">
+              <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed italic">
                 "{testimonial.content}"
               </p>
 
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-primary-900/50 border border-primary-700/50 rounded-full flex items-center justify-center text-2xl mr-4">
+                <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/50 border border-primary-300 dark:border-primary-700/50 rounded-full flex items-center justify-center text-2xl mr-4">
                   {testimonial.image}
                 </div>
                 <div>
-                  <div className="font-bold text-white">{testimonial.name}</div>
-                  <div className="text-sm text-gray-400">{testimonial.role}</div>
+                  <div className="font-bold text-gray-900 dark:text-white">{testimonial.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>

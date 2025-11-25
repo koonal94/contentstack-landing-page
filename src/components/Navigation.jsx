@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { getEditTag } from '../utils/getEditTag'
+import ThemeToggle from './ThemeToggle'
 
 const Navigation = ({ scrollY, data, entry }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -102,7 +103,7 @@ const Navigation = ({ scrollY, data, entry }) => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-gray-900/95 backdrop-blur-sm shadow-lg py-4 border-b border-gray-800'
+          ? 'bg-gray-900/95 dark:bg-gray-900/95 bg-white/95 backdrop-blur-sm shadow-lg py-4 border-b border-gray-800 dark:border-gray-800 border-gray-200'
           : 'bg-transparent py-6'
       }`}
     >
@@ -158,7 +159,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                     key={item.name}
                     type="button"
                     onClick={(e) => handleHashLink(href, e)}
-                    className="text-gray-300 hover:text-primary-400 transition-colors duration-200 font-medium cursor-pointer bg-transparent border-none p-0"
+                    className="text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 font-medium cursor-pointer bg-transparent border-none p-0"
                   >
                     {item.name}
                   </button>
@@ -172,7 +173,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-300 hover:text-primary-400 transition-colors duration-200 font-medium"
+                    className="text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 font-medium"
                   >
                     {item.name}
                   </a>
@@ -197,8 +198,8 @@ const Navigation = ({ scrollY, data, entry }) => {
               to="/login"
               className={`font-medium transition-colors ${
                 location.pathname === '/login' 
-                  ? 'text-primary-400' 
-                  : 'text-gray-300 hover:text-primary-400'
+                  ? 'text-primary-600 dark:text-primary-400' 
+                  : 'text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
               }`}
             >
               Log in
@@ -206,11 +207,12 @@ const Navigation = ({ scrollY, data, entry }) => {
             <Link to="/get-started" className="btn-primary">
               Get Started
             </Link>
+            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-gray-300"
+            className="md:hidden text-gray-900 dark:text-gray-300"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -239,7 +241,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                       setIsOpen(false)
                       handleHashLink(href, e)
                     }}
-                    className="block w-full text-left text-gray-300 hover:text-primary-400 transition-colors py-2 cursor-pointer bg-transparent border-none p-0"
+                    className="block w-full text-left text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors py-2 cursor-pointer bg-transparent border-none p-0"
                   >
                     {item.name}
                   </button>
@@ -253,7 +255,7 @@ const Navigation = ({ scrollY, data, entry }) => {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-gray-300 hover:text-primary-400 transition-colors py-2"
+                    className="block text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors py-2"
                     onClick={() => setIsOpen(false)}
                   >
                     {item.name}
@@ -272,10 +274,10 @@ const Navigation = ({ scrollY, data, entry }) => {
                 </Link>
               )
             })}
-            <div className="pt-4 border-t border-gray-800 space-y-3">
+            <div className="pt-4 border-t border-gray-800 dark:border-gray-800 border-gray-200 space-y-3">
               <Link 
                 to="/login"
-                className="block w-full text-gray-300 hover:text-primary-400 font-medium text-center py-2"
+                className="block w-full text-gray-900 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium text-center py-2"
                 onClick={() => setIsOpen(false)}
               >
                 Log in
@@ -287,6 +289,9 @@ const Navigation = ({ scrollY, data, entry }) => {
               >
                 Get Started
               </Link>
+              <div className="flex justify-center pt-2">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         )}

@@ -8,7 +8,18 @@
   }
   
   body {
-    @apply bg-gray-900 text-gray-100 antialiased;
+    @apply antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Dark theme (default) */
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  /* Light theme */
+  .light body {
+    @apply bg-gray-50 text-gray-900;
   }
 }
 
@@ -141,6 +152,11 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-primary-500 to-purple-600;
   }
   
+  /* Keep purple gradient in light theme as well */
+  .light .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-primary-500 to-purple-600;
+  }
+  
   .bg-gradient-radial {
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
@@ -150,10 +166,25 @@
   }
   
   .btn-secondary {
-    @apply px-6 py-3 bg-gray-800 text-primary-400 rounded-lg font-semibold border-2 border-primary-600 hover:bg-gray-700 hover:text-primary-300 transition-all duration-200;
+    @apply px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold border-2 border-primary-600 hover:bg-gray-700 hover:text-white transition-all duration-200;
   }
   
   .feature-card {
     @apply bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-700;
+  }
+
+  .customer-logos-scroll {
+    display: inline-flex;
+    animation: scroll-logos var(--scroll-duration, 9s) linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes scroll-logos {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
 }

@@ -62,11 +62,28 @@ export function getEditTag(entry, fieldPath) {
   }
   
   const parts = fieldPath.split('.')
-  if (parts.length < 2) {
+  if (parts.length < 1) {
     return {}
   }
   
   const groupField = parts[0] // e.g., 'hero', 'navigation', 'benefits'
+  
+  // Handle single-part paths (for array fields like 'steps' or 'benefits')
+  if (parts.length === 1) {
+    // Check for group-level tag (used for array fields)
+    // Approach 1: entry.fields.group.$ (group-level tag)
+    if (entry?.fields?.[groupField]?.$ && typeof entry.fields[groupField].$ === 'object' && entry.fields[groupField].$['data-cslp']) {
+      return entry.fields[groupField].$
+    }
+    
+    // Approach 2: entry.$.group (flat structure)
+    if (entry?.$?.[groupField] && typeof entry.$[groupField] === 'object' && entry.$[groupField]['data-cslp']) {
+      return entry.$[groupField]
+    }
+    
+    // Return empty if no group-level tag found
+    return {}
+  }
   
   // Handle nested paths like 'benefits.cards.0.title' or 'benefits.cards'
   if (parts.length === 2) {

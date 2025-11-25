@@ -363,9 +363,9 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Main Content Section with Background Animations */}
-      <div className="relative bg-gradient-to-b from-gray-950 via-gray-950 to-gray-950 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 overflow-hidden">
         {/* Background animations matching hero section */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute inset-0">
@@ -427,21 +427,21 @@ function LoginPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="inline-block px-4 py-2 bg-primary-900/50 text-primary-300 rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
+                  className="inline-block px-4 py-2 bg-primary-900/50 text-white rounded-full text-sm font-semibold mb-6 border border-primary-700/50"
                   {...getEditTag(entry, 'hero.eyebrow')}
                 >
                   {cmsData?.hero?.eyebrow || '🔐 Secure Access'}
                 </motion.div>
                 
                 <h1 
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+                  className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
                   {...getEditTag(entry, 'hero.heading')}
                 >
                   {cmsData?.hero?.heading || 'Welcome Back'}
                 </h1>
                 
                 <p 
-                  className="text-xl text-gray-300 mb-8 leading-relaxed"
+                  className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed"
                   {...getEditTag(entry, 'hero.subheading')}
                 >
                   {cmsData?.hero?.subheading || 'Sign in to your account to access your dashboard and manage your content.'}
@@ -465,8 +465,8 @@ function LoginPage() {
                         <Check className="w-4 h-4 text-primary-400" />
                       </div>
                       <div>
-                        <div className="font-semibold text-white">{feature.title}</div>
-                        <div className="text-sm text-gray-300">{feature.description}</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">{feature.title}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{feature.description}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -478,17 +478,17 @@ function LoginPage() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10"
+                className="bg-white/90 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-8 md:p-10"
               >
                 <div className="mb-8">
                   <h2 
-                    className="text-2xl font-bold text-white mb-2"
+                    className="text-2xl font-bold text-gray-900 dark:text-white mb-2"
                     {...getEditTag(entry, 'form.title')}
                   >
                     {cmsData?.form?.title || 'Sign In'}
                   </h2>
                   <p 
-                    className="text-gray-300"
+                    className="text-gray-600 dark:text-gray-300"
                     {...getEditTag(entry, 'form.subtitle')}
                   >
                     {cmsData?.form?.subtitle || 'Enter your credentials to continue'}
@@ -499,18 +499,18 @@ function LoginPage() {
                   {/* Email */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-300 mb-2"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.email_label')}
                     >
                       {cmsData?.form?.emailLabel || 'Email Address'}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-5 h-5" />
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="you@example.com"
                         required
                       />
@@ -520,25 +520,25 @@ function LoginPage() {
                   {/* Password */}
                   <div>
                     <label 
-                      className="block text-sm font-medium text-gray-300 mb-2"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       {...getEditTag(entry, 'form.password_label')}
                     >
                       {cmsData?.form?.passwordLabel || 'Password'}
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-5 h-5" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500"
+                        className="w-full pl-10 pr-10 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="••••••••"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -552,10 +552,10 @@ function LoginPage() {
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-600 bg-gray-900 rounded focus:ring-primary-500"
+                        className="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 rounded focus:ring-primary-500"
                       />
                       <span 
-                        className="ml-2 text-sm text-gray-300"
+                        className="ml-2 text-sm text-gray-700 dark:text-gray-300"
                         {...getEditTag(entry, 'form.remember_me_text')}
                       >
                         {cmsData?.form?.rememberMe || 'Remember me'}
@@ -585,11 +585,11 @@ function LoginPage() {
                   {/* Divider */}
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-700"></div>
+                      <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
                       <span 
-                        className="px-2 bg-gray-800 text-gray-400"
+                        className="px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                         {...getEditTag(entry, 'form.or_text')}
                       >
                         {cmsData?.form?.orText || 'Or continue with'}
@@ -601,7 +601,7 @@ function LoginPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
-                      className="flex items-center justify-center px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-700 bg-gray-800 transition-colors"
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 transition-colors text-gray-900 dark:text-white"
                     >
                       <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -613,7 +613,7 @@ function LoginPage() {
                     </button>
                     <button
                       type="button"
-                      className="flex items-center justify-center px-4 py-3 border border-gray-700 rounded-lg hover:bg-gray-700 bg-gray-800 transition-colors"
+                      className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 transition-colors text-gray-900 dark:text-white"
                     >
                       <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -623,7 +623,7 @@ function LoginPage() {
                   </div>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                   Don't have an account?{' '}
                   <Link to="/get-started" className="text-primary-400 hover:text-primary-300 font-medium">
                     Get Started
