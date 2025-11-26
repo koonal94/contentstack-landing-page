@@ -28,6 +28,14 @@ export function initLivePreview() {
     AZURE_NA: 'azure-na-app.contentstack.com',
   }
 
+  // Check if we're on localhost (not on Launch/production)
+  // The "Start Editing" button should only appear on localhost
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('localhost:')
+  )
+
   try {
     // Per Contentstack V3 SDK: preview_token should NOT be in stackDetails
     // It should ONLY be in stackSdk.live_preview.preview_token (configured in contentstackClient.js)
@@ -46,7 +54,7 @@ export function initLivePreview() {
         port: 443,
       },
       editButton: {
-        enable: true,
+        enable: isLocalhost, // Only enable edit button on localhost, not on Launch
         exclude: ['outsideLivePreviewPortal'],
         includeByQueryParameter: false,
         position: 'top-right',
