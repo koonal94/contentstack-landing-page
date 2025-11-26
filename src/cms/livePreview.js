@@ -143,8 +143,20 @@ function handleGetSDKVersion(event) {
   }
 }
 
+// Map content types to their default routes
+function getContentTypeRoute(contentType) {
+  const routeMap = {
+    'homepage': '/',
+    'login': '/login',
+    'get_started': '/get-started',
+    'resources': '/resources',
+    'company': '/company',
+  }
+  return routeMap[contentType] || '/'
+}
+
 // Handle VEB request to get all entries on the current page
-function handleGetEntriesOnPage(event) {
+async function handleGetEntriesOnPage(event) {
   try {
     const entries = []
     
@@ -154,24 +166,88 @@ function handleGetEntriesOnPage(event) {
     const locale = sessionStorage.getItem('contentstack_locale') || import.meta.env.VITE_CONTENTSTACK_LOCALE || 'en-us'
     
     if (entryUid && contentType) {
-      // Construct preview URL based on content type and current location
-      let previewUrl = window.location.origin + window.location.pathname
+      // Try to fetch the entry's URL field to ensure we use the correct path
+      let entryUrl = null
+      try {
+        const { fetchEntryData } = await import('./fetchByUrl')
+        const entry = await fetchEntryData(contentType, entryUid)
+        if (entry) {
+          entryUrl = entry?.url ||
+                     entry?.fields?.url ||
+                     entry?.fields?.entry_url ||
+                     null
+
+          // Normalize URL if it's a full URL
+          if (entryUrl && typeof entryUrl === 'string' && entryUrl.includes('://')) {
+            try {
+              const urlObj = new URL(entryUrl)
+              entryUrl = urlObj.pathname
+            } catch (e) {
+              const match = entryUrl.match(/\/\/[^\/]+(\/.*)/)
+              if (match) {
+                entryUrl = match[1]
+              }
+            }
+          }
+
+          // Ensure URL starts with / and doesn't end with /
+          if (entryUrl && typeof entryUrl === 'string') {
+            if (!entryUrl.startsWith('/')) {
+              entryUrl = '/' + entryUrl
+            }
+            entryUrl = entryUrl.replace(/\/+$/, '') || '/'
+          }
+        }
+      } catch (e) {
+        console.debug('[VEB] Could not fetch entry for URL field:', e)
+      }
+
+      // Use entry's URL field if available, otherwise use current pathname, otherwise use content type route
+      let pathname = entryUrl || window.location.pathname || getContentTypeRoute(contentType) || '/'
       
-      // Add query parameters for live preview
-      const urlParams = new URLSearchParams()
-      urlParams.set('content_type_uid', contentType)
-      urlParams.set('entry_uid', entryUid)
-      if (locale) {
-        urlParams.set('locale', locale)
+      // Ensure pathname is normalized
+      if (!pathname.startsWith('/')) {
+        pathname = '/' + pathname
+      }
+      pathname = pathname.replace(/\/+$/, '') || '/'
+      
+      // CRITICAL: Use the EXACT current URL (including query params and hash) that VEB is viewing
+      // This ensures VEB recognizes it as the correct page
+      // VEB compares this URL with the iframe URL, so they must match exactly
+      let previewUrl = window.location.origin + pathname
+      
+      // Preserve existing query parameters from the current URL
+      const currentParams = new URLSearchParams(window.location.search)
+      
+      // Ensure required Live Preview params are present
+      if (!currentParams.has('content_type_uid') && !currentParams.has('contentTypeUid')) {
+        currentParams.set('content_type_uid', contentType)
+      }
+      if (!currentParams.has('entry_uid') && !currentParams.has('entryUid')) {
+        currentParams.set('entry_uid', entryUid)
+      }
+      if (locale && !currentParams.has('locale')) {
+        currentParams.set('locale', locale)
       }
       
-      previewUrl += '?' + urlParams.toString()
+      // Construct final URL with all params
+      const queryString = currentParams.toString()
+      if (queryString) {
+        previewUrl += '?' + queryString
+      }
+      
+      // Include hash if present (some Contentstack setups use hash-based routing)
+      if (window.location.hash) {
+        previewUrl += window.location.hash
+      }
+      
+      console.debug('[VEB] Sending preview URL:', previewUrl, 'for entry:', entryUid, 'contentType:', contentType, 'pathname:', pathname, 'entryUrl:', entryUrl)
       
       entries.push({
         uid: entryUid,
         content_type_uid: contentType,
         locale: locale,
-        url: previewUrl, // Include preview URL for VEB
+        url: previewUrl, // Use exact current URL so VEB recognizes it
       })
     }
     

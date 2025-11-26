@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { getEditTag } from '../utils/getEditTag'
 import ThemeToggle from './ThemeToggle'
+import csLogo from '../assets/images/CS_logo.png'
 
 const Navigation = ({ scrollY, data, entry, homepageUrl = '/' }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -132,14 +133,19 @@ const Navigation = ({ scrollY, data, entry, homepageUrl = '/' }) => {
               }
             }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">C</span>
+            {/* Contentstack Logo */}
+            <div className="contentstack-logo-container flex items-center">
+              <img 
+                src={csLogo} 
+                alt="Contentstack" 
+                className="contentstack-logo h-8 w-auto"
+              />
             </div>
             <span 
               className="text-2xl font-bold gradient-text"
               {...getEditTag(entry, 'navigation.brand_name')}
             >
-              {data?.brandName || 'ContentStack'}
+              {data?.brandName || 'Contentstack'}
             </span>
           </Link>
 

@@ -187,4 +187,16 @@
       transform: translateX(-50%);
     }
   }
+
+  /* Contentstack Logo */
+  .contentstack-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .contentstack-logo {
+    height: 32px;
+    width: auto;
+  }
 }

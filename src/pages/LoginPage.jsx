@@ -27,6 +27,25 @@ function LoginPage() {
   const callbackUpdateTimeRef = useRef(0)
   const lastLocationRef = useRef(location.pathname)
 
+  // CRITICAL: Check URL params immediately on mount (before VEB requests entries)
+  // This ensures sessionStorage is set before handleGetEntriesOnPage is called
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const entryUidFromUrl = urlParams.get('entry_uid') || urlParams.get('entryUid')
+      const contentTypeFromUrl = urlParams.get('content_type_uid') || urlParams.get('contentTypeUid')
+      
+      if (entryUidFromUrl && contentTypeFromUrl === 'login') {
+        console.debug('[LoginPage] Initial mount - Setting entry UID from URL params:', entryUidFromUrl)
+        sessionStorage.setItem('contentstack_entry_uid', entryUidFromUrl)
+        sessionStorage.setItem('contentstack_content_type', 'login')
+        setEntryUid(entryUidFromUrl)
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }, []) // Run only once on mount
+
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY)
@@ -58,13 +77,34 @@ function LoginPage() {
           handleEntryChange()
         } else if (event.data.entry_uid || event.data.entryUid) {
           const newUid = event.data.entry_uid || event.data.entryUid
+          const newContentType = event.data.content_type_uid || event.data.contentTypeUid || 'login'
           if (newUid && newUid !== entryUid) {
+            console.debug('[LoginPage] Updating entry UID from message:', newUid, 'contentType:', newContentType)
             setEntryUid(newUid)
-            sessionStorage.setItem('contentstack_content_type', 'login')
+            sessionStorage.setItem('contentstack_content_type', newContentType)
             sessionStorage.setItem('contentstack_entry_uid', newUid)
             handleEntryChange()
           }
         }
+      }
+      
+      // Also check URL params on page load (Contentstack might add them to the iframe URL)
+      try {
+        const urlParams = new URLSearchParams(window.location.search)
+        const entryUidFromUrl = urlParams.get('entry_uid') || urlParams.get('entryUid')
+        const contentTypeFromUrl = urlParams.get('content_type_uid') || urlParams.get('contentTypeUid')
+        
+        if (entryUidFromUrl && contentTypeFromUrl === 'login') {
+          const storedUid = sessionStorage.getItem('contentstack_entry_uid')
+          if (!storedUid || storedUid !== entryUidFromUrl) {
+            console.debug('[LoginPage] Setting entry UID from URL params:', entryUidFromUrl)
+            sessionStorage.setItem('contentstack_entry_uid', entryUidFromUrl)
+            sessionStorage.setItem('contentstack_content_type', 'login')
+            setEntryUid(entryUidFromUrl)
+          }
+        }
+      } catch (e) {
+        // Silent fail
       }
     }
     
